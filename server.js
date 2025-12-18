@@ -591,8 +591,8 @@ const server = http.createServer((req, res) => {
         // Encrypt AES key with recipient's RSA public key
         const encryptedKey = rsaEncrypt(aesKey, users[recipientId].publicKey);
         
-        // Sign the message with sender's private key
-        const signature = rsaSign(message, users[senderId].privateKey);
+        // Sign the encrypted message with sender's private key (Encrypt-Then-Sign)
+        const signature = rsaSign(encrypted, users[senderId].privateKey);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
@@ -614,14 +614,12 @@ const server = http.createServer((req, res) => {
         }
 
         try {
-          // Decrypt AES key with recipient's RSA private key
+          // First, try to decrypt (only correct recipient can do this)
           const aesKey = rsaDecrypt(encryptedKey, users[recipientId].privateKey);
-          
-          // Decrypt message with AES key
           const decryptedMessage = aesDecrypt(encryptedMessage, aesKey, Buffer.from(iv, 'hex'));
           
-          // Verify signature with sender's public key
-          const isValid = rsaVerify(decryptedMessage, signature, users[senderId].publicKey);
+          // Only verify signature if decryption succeeded (Encrypt-Then-Sign)
+          const isValid = rsaVerify(encryptedMessage, signature, users[senderId].publicKey);
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
@@ -630,7 +628,10 @@ const server = http.createServer((req, res) => {
           }));
         } catch (error) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Decryption failed: ' + error.message }));
+          res.end(JSON.stringify({ 
+            error: 'Decryption failed - you are not the intended recipient',
+            details: error.message 
+          }));
         }
       }
 
