@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Messaging System - AES-256 + RSA-1024</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 Secure Messaging System</h1>
+            <p class="subtitle">Hybrid AES-256 & RSA-1024 Encryption with Digital Signatures</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- User Registration Section -->
+            <div class="card">
+                <h2>👤 User Registration</h2>
+                <div class="form-group">
+                    <input type="text" id="userId" placeholder="Enter User ID (e.g., Alice, Bob)">
+                    <button onclick="generateKeys()" class="btn btn-primary">Generate RSA Keys</button>
+                </div>
+                <div id="keyStatus" class="status-message"></div>
+                <div id="publicKeyDisplay" class="key-display"></div>
+            </div>
+
+            <!-- Active Users Section -->
+            <div class="card">
+                <h2>👥 Active Users</h2>
+                <button onclick="refreshUsers()" class="btn btn-secondary">Refresh Users</button>
+                <div id="usersList" class="users-list"></div>
+            </div>
+
+            <!-- Encrypt Message Section -->
+            <div class="card full-width">
+                <h2>📤 Encrypt & Send Message</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Sender ID:</label>
+                        <input type="text" id="senderId" placeholder="Your User ID">
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient ID:</label>
+                        <input type="text" id="recipientId" placeholder="Recipient User ID">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Message:</label>
+                    <textarea id="messageInput" rows="3" placeholder="Type your secret message here..."></textarea>
+                </div>
+                <button onclick="encryptMessage()" class="btn btn-success">🔒 Encrypt Message</button>
+                <div id="encryptStatus" class="status-message"></div>
+                <div id="encryptedOutput" class="crypto-output"></div>
+            </div>
+
+            <!-- Decrypt Message Section -->
+            <div class="card full-width">
+                <h2>📥 Decrypt Message</h2>
+                <div class="form-group">
+                    <label>Encrypted Message (Hex):</label>
+                    <textarea id="encryptedMessage" rows="2" placeholder="Paste encrypted message..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Encrypted AES Key (Hex):</label>
+                    <textarea id="encryptedKey" rows="2" placeholder="Paste encrypted key..."></textarea>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>IV (Hex):</label>
+                        <input type="text" id="ivInput" placeholder="Initialization Vector">
+                    </div>
+                    <div class="form-group">
+                        <label>Signature (Hex):</label>
+                        <input type="text" id="signatureInput" placeholder="Digital Signature">
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Sender ID:</label>
+                        <input type="text" id="decryptSenderId" placeholder="Original Sender">
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient ID (You):</label>
+                        <input type="text" id="decryptRecipientId" placeholder="Your User ID">
+                    </div>
+                </div>
+                <button onclick="decryptMessage()" class="btn btn-warning">🔓 Decrypt & Verify</button>
+                <div id="decryptStatus" class="status-message"></div>
+                <div id="decryptedOutput" class="crypto-output"></div>
+            </div>
+        </div>
+
+        
+    </div>
+
+    <script>
+        let lastEncryptedData = null;
+
+        async function generateKeys() {
+            const userId = document.getElementById('userId').value.trim();
+            if (!userId) {
+                showStatus('keyStatus', 'Please enter a User ID', 'error');
+                return;
+            }
+
+            showStatus('keyStatus', 'Generating RSA-1024 keys... (may take a few seconds)', 'info');
+
+            try {
+                const response = await fetch('/generate-keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+
+                const data = await response.json();
+                showStatus('keyStatus', `✓ Keys generated for ${userId}`, 'success');
+                
+                document.getElementById('publicKeyDisplay').innerHTML = `
+                    <strong>Public Key:</strong><br>
+                    <small>e: ${data.publicKey.e.substring(0, 50)}...</small><br>
+                    <small>n: ${data.publicKey.n.substring(0, 100)}...</small>
+                `;
+                
+                refreshUsers();
+            } catch (error) {
+                showStatus('keyStatus', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        async function refreshUsers() {
+            try {
+                const response = await fetch('/get-users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                const data = await response.json();
+                const usersList = document.getElementById('usersList');
+                
+                if (data.users.length === 0) {
+                    usersList.innerHTML = '<p class="empty-state">No users registered yet</p>';
+                } else {
+                    usersList.innerHTML = data.users.map(user => 
+                        `<div class="user-item">👤 ${user}</div>`
+                    ).join('');
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        }
+
+        async function encryptMessage() {
+            const senderId = document.getElementById('senderId').value.trim();
+            const recipientId = document.getElementById('recipientId').value.trim();
+            const message = document.getElementById('messageInput').value;
+
+            if (!senderId || !recipientId || !message) {
+                showStatus('encryptStatus', 'Please fill all fields', 'error');
+                return;
+            }
+
+            showStatus('encryptStatus', 'Encrypting with AES-256 and signing with RSA...', 'info');
+
+            try {
+                const response = await fetch('/encrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, recipientId, senderId })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showStatus('encryptStatus', 'Error: ' + data.error, 'error');
+                    return;
+                }
+
+                lastEncryptedData = data;
+                showStatus('encryptStatus', '✓ Message encrypted and signed successfully', 'success');
+                
+                document.getElementById('encryptedOutput').innerHTML = `
+                    <div class="output-section">
+                        <strong>Encrypted Message (AES-256-CBC):</strong>
+                        <div class="hex-output">${data.encryptedMessage}</div>
+                    </div>
+                    <div class="output-section">
+                        <strong>Encrypted AES Key (RSA-1024):</strong>
+                        <div class="hex-output">${data.encryptedKey.substring(0, 200)}...</div>
+                    </div>
+                    <div class="output-section">
+                        <strong>IV:</strong>
+                        <div class="hex-output">${data.iv}</div>
+                    </div>
+                    <div class="output-section">
+                        <strong>Signature (RSA-SHA256):</strong>
+                        <div class="hex-output">${data.signature.substring(0, 200)}...</div>
+                    </div>
+                    <button onclick="copyToDecrypt()" class="btn btn-small">Copy to Decrypt Section</button>
+                `;
+            } catch (error) {
+                showStatus('encryptStatus', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        async function decryptMessage() {
+            const encryptedMessage = document.getElementById('encryptedMessage').value.trim();
+            const encryptedKey = document.getElementById('encryptedKey').value.trim();
+            const iv = document.getElementById('ivInput').value.trim();
+            const signature = document.getElementById('signatureInput').value.trim();
+            const senderId = document.getElementById('decryptSenderId').value.trim();
+            const recipientId = document.getElementById('decryptRecipientId').value.trim();
+
+            if (!encryptedMessage || !encryptedKey || !iv || !signature || !senderId || !recipientId) {
+                showStatus('decryptStatus', 'Please fill all fields', 'error');
+                return;
+            }
+
+            showStatus('decryptStatus', 'Decrypting and verifying signature...', 'info');
+
+            try {
+                const response = await fetch('/decrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ encryptedMessage, encryptedKey, iv, signature, senderId, recipientId })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showStatus('decryptStatus', 'Error: ' + data.error, 'error');
+                    return;
+                }
+
+                const signatureStatus = data.signatureValid 
+                    ? '<span class="signature-valid">✓ Signature Valid</span>' 
+                    : '<span class="signature-invalid">✗ Signature Invalid</span>';
+
+                showStatus('decryptStatus', '✓ Message decrypted successfully', 'success');
+                
+                document.getElementById('decryptedOutput').innerHTML = `
+                    <div class="output-section">
+                        <strong>Decrypted Message:</strong>
+                        <div class="decrypted-message">${data.decryptedMessage}</div>
+                    </div>
+                    <div class="output-section">
+                        <strong>Signature Verification:</strong>
+                        <div>${signatureStatus}</div>
+                    </div>
+                `;
+            } catch (error) {
+                showStatus('decryptStatus', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        function copyToDecrypt() {
+            if (!lastEncryptedData) return;
+            
+            document.getElementById('encryptedMessage').value = lastEncryptedData.encryptedMessage;
+            document.getElementById('encryptedKey').value = lastEncryptedData.encryptedKey;
+            document.getElementById('ivInput').value = lastEncryptedData.iv;
+            document.getElementById('signatureInput').value = lastEncryptedData.signature;
+            document.getElementById('decryptSenderId').value = lastEncryptedData.senderId;
+            
+            showStatus('decryptStatus', 'Data copied! Enter recipient ID and click Decrypt', 'info');
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status-message status-${type}`;
+        }
+
+        // Load users on page load
+        refreshUsers();
+    </script>
+</body>
+</html>

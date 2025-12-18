@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Testing & Evaluation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+        }
+
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result-line {
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-line:last-child {
+            border-bottom: none;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+
+        .info {
+            color: #007bff;
+        }
+
+        .warning {
+            color: #ffc107;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .summary-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .export-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Secure Messaging System - Testing & Evaluation</h1>
+
+        <!-- Test 1: Key Generation Performance -->
+        <div class="test-section">
+            <h2>Test 1: RSA Key Generation Performance</h2>
+            <p>Measures time taken to generate RSA-1024 key pairs</p>
+            <div class="test-controls">
+                <input type="number" id="keyGenCount" value="30" min="1" max="100" placeholder="Number of keys">
+                <button class="btn btn-primary" onclick="testKeyGeneration()">Run Test</button>
+            </div>
+            <div id="keyGenResults" class="results"></div>
+        </div>
+
+        <!-- Test 2: Encryption Performance -->
+        <div class="test-section">
+            <h2>Test 2: Encryption Performance (Different Message Sizes)</h2>
+            <p>Tests encryption speed with various message lengths</p>
+            <div class="test-controls">
+                <label>Iterations per size: <input type="number" id="encryptIterations" value="30" min="1" max="100" style="width: 80px;"></label>
+                <button class="btn btn-primary" onclick="testEncryptionPerformance()">Run Test</button>
+            </div>
+            <div id="encryptResults" class="results"></div>
+        </div>
+
+        <!-- Test 3: Decryption Performance -->
+        <div class="test-section">
+            <h2>Test 3: Decryption Performance</h2>
+            <p>Tests decryption speed and signature verification</p>
+            <div class="test-controls">
+                <label>Iterations per size: <input type="number" id="decryptIterations" value="30" min="1" max="100" style="width: 80px;"></label>
+                <button class="btn btn-primary" onclick="testDecryptionPerformance()">Run Test</button>
+            </div>
+            <div id="decryptResults" class="results"></div>
+        </div>
+
+        <!-- Test 4: Correctness Testing -->
+        <div class="test-section">
+            <h2>Test 4: Correctness & Integrity Testing</h2>
+            <p>Verifies encryption/decryption accuracy and signature verification</p>
+            <div class="test-controls">
+                <input type="number" id="correctnessIterations" value="100" min="1" max="1000" placeholder="Iterations">
+                <button class="btn btn-primary" onclick="testCorrectness()">Run Test</button>
+            </div>
+            <div id="correctnessResults" class="results"></div>
+        </div>
+
+        <!-- Test 5: Multi-User Testing -->
+        <div class="test-section">
+            <h2>Test 5: Multi-User Scalability</h2>
+            <p>Tests system with multiple users and cross-communication</p>
+            <div class="test-controls">
+                <input type="number" id="userCount" value="10" min="2" max="50" placeholder="Number of users">
+                <button class="btn btn-primary" onclick="testMultiUser()">Run Test</button>
+            </div>
+            <div id="multiUserResults" class="results"></div>
+        </div>
+
+        <!-- Test 6: Security Testing -->
+        <div class="test-section">
+            <h2>Test 6: Security Testing (Tamper Detection)</h2>
+            <p>Tests signature verification and tamper detection</p>
+            <div class="test-controls">
+                <button class="btn btn-warning" onclick="testSecurity()">Run Test</button>
+            </div>
+            <div id="securityResults" class="results"></div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="summary-card" id="summarySection" style="display: none;">
+            <h3>📊 Test Summary</h3>
+            <div class="stat-grid" id="statGrid"></div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="export-section">
+            <h3>📥 Export Results</h3>
+            <button class="btn btn-success" onclick="exportResults()">Export as JSON</button>
+            <button class="btn btn-primary" onclick="exportResultsCSV()">Export as CSV</button>
+            <button class="btn btn-warning" onclick="generateReport()">Generate Report</button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to store test results
+        let testResults = {
+            keyGeneration: [],
+            encryption: [],
+            decryption: [],
+            correctness: {},
+            multiUser: {},
+            security: {}
+        };
+
+        // Helper: Calculate standard deviation
+        function calculateStdDev(values, mean) {
+            if (values.length < 2) return 0;
+            const squareDiffs = values.map(v => Math.pow(v - mean, 2));
+            const variance = squareDiffs.reduce((a,b) => a+b) / values.length;
+            return Math.sqrt(variance);
+        }
+
+        // Helper: Calculate 95% confidence interval
+        function calculate95CI(stdDev, n) {
+            const tValue = n > 30 ? 1.96 : 2.045; // t-distribution approximation
+            return tValue * (stdDev / Math.sqrt(n));
+        }
+
+        // Test 1: Key Generation Performance
+        async function testKeyGeneration() {
+            const count = parseInt(document.getElementById('keyGenCount').value);
+            const resultsDiv = document.getElementById('keyGenResults');
+            resultsDiv.innerHTML = '<div class="info">Running test...</div>';
+
+            const times = [];
+            let successCount = 0;
+
+            for (let i = 0; i < count; i++) {
+                const startTime = performance.now();
+                try {
+                    const response = await fetch('/generate-keys', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: `TestUser${i}` })
+                    });
+                    await response.json();
+                    const endTime = performance.now();
+                    const duration = endTime - startTime;
+                    times.push(duration);
+                    successCount++;
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+
+            const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+            const minTime = Math.min(...times);
+            const maxTime = Math.max(...times);
+
+            testResults.keyGeneration = { times, avgTime, minTime, maxTime, successCount, totalCount: count };
+
+            resultsDiv.innerHTML = `
+                <div class="success">✓ Test completed: ${successCount}/${count} successful</div>
+                <div class="result-line"><strong>Average Time:</strong> ${avgTime.toFixed(2)} ms</div>
+                <div class="result-line"><strong>Min Time:</strong> ${minTime.toFixed(2)} ms</div>
+                <div class="result-line"><strong>Max Time:</strong> ${maxTime.toFixed(2)} ms</div>
+                <div class="result-line"><strong>Success Rate:</strong> ${(successCount/count*100).toFixed(1)}%</div>
+            `;
+
+            updateSummary();
+        }
+
+        // Test 2: Encryption Performance
+        async function testEncryptionPerformance() {
+            const iterations = parseInt(document.getElementById('encryptIterations')?.value || 30);
+            const resultsDiv = document.getElementById('encryptResults');
+            resultsDiv.innerHTML = '<div class="info">Initializing encryption test...</div>';
+
+            // Ensure users exist
+            await fetch('/generate-keys', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: 'TestSender' })
+            });
+            await fetch('/generate-keys', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: 'TestReceiver' })
+            });
+
+            const testCases = [
+                { size: 16, message: 'A'.repeat(16) },
+                { size: 128, message: 'A'.repeat(128) },
+                { size: 1024, message: 'A'.repeat(1024) },
+                { size: 10240, message: 'A'.repeat(10240) },
+                { size: 102400, message: 'A'.repeat(102400) }
+            ];
+
+            testResults.encryption = [];
+
+            for (const test of testCases) {
+                const times = [];
+                resultsDiv.innerHTML = `<div class="info">Testing ${test.size} bytes: 0/${iterations} iterations...</div>`;
+
+                // Run multiple iterations
+                for (let i = 0; i < iterations; i++) {
+                    const startTime = performance.now();
+                    const response = await fetch('/encrypt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: test.message,
+                            senderId: 'TestSender',
+                            recipientId: 'TestReceiver'
+                        })
+                    });
+                    await response.json();
+                    const endTime = performance.now();
+                    times.push(endTime - startTime);
+
+                    if ((i + 1) % 5 === 0) {
+                        resultsDiv.innerHTML = `<div class="info">Testing ${test.size} bytes: ${i + 1}/${iterations} iterations...</div>`;
+                    }
+                }
+
+                // Calculate statistics
+                const avgTime = times.reduce((a, b) => a + b) / times.length;
+                const minTime = Math.min(...times);
+                const maxTime = Math.max(...times);
+                const stdDev = calculateStdDev(times, avgTime);
+                const ci95 = calculate95CI(stdDev, times.length);
+                const speed = (test.size / 1024) / (avgTime / 1000);
+
+                testResults.encryption.push({
+                    size: test.size,
+                    avgTime,
+                    minTime,
+                    maxTime,
+                    stdDev,
+                    ci95,
+                    speed,
+                    iterations,
+                    times
+                });
+            }
+
+            // Display results with statistics
+            let html = '<div class="success">✓ Encryption performance test complete</div>';
+            html += '<table><tr><th>Size</th><th>Avg Time</th><th>Std Dev</th><th>95% CI</th><th>Min</th><th>Max</th><th>Speed</th></tr>';
+
+            testResults.encryption.forEach(e => {
+                html += `<tr>
+                    <td>${e.size} bytes (${(e.size/1024).toFixed(1)} KB)</td>
+                    <td>${e.avgTime.toFixed(2)} ms</td>
+                    <td>±${e.stdDev.toFixed(2)} ms</td>
+                    <td>±${e.ci95.toFixed(2)} ms</td>
+                    <td>${e.minTime.toFixed(2)} ms</td>
+                    <td>${e.maxTime.toFixed(2)} ms</td>
+                    <td>${e.speed.toFixed(2)} KB/s</td>
+                </tr>`;
+            });
+
+            html += '</table>';
+            resultsDiv.innerHTML = html;
+            updateSummary();
+        }
+
+        // Test 3: Decryption Performance
+        async function testDecryptionPerformance() {
+            const iterations = parseInt(document.getElementById('decryptIterations')?.value || 30);
+            const resultsDiv = document.getElementById('decryptResults');
+            resultsDiv.innerHTML = '<div class="info">Initializing decryption test...</div>';
+
+            const testCases = [
+                { size: 16, message: 'A'.repeat(16) },
+                { size: 128, message: 'A'.repeat(128) },
+                { size: 1024, message: 'A'.repeat(1024) },
+                { size: 10240, message: 'A'.repeat(10240) }
+            ];
+
+            testResults.decryption = [];
+
+            for (const test of testCases) {
+                const encryptTimes = [];
+                const decryptTimes = [];
+                resultsDiv.innerHTML = `<div class="info">Testing ${test.size} bytes: 0/${iterations} iterations...</div>`;
+
+                // Run multiple iterations
+                for (let i = 0; i < iterations; i++) {
+                    // Encrypt
+                    const encStartTime = performance.now();
+                    const encResponse = await fetch('/encrypt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: test.message,
+                            senderId: 'TestSender',
+                            recipientId: 'TestReceiver'
+                        })
+                    });
+                    const encData = await encResponse.json();
+                    const encEndTime = performance.now();
+                    encryptTimes.push(encEndTime - encStartTime);
+
+                    // Decrypt
+                    const decStartTime = performance.now();
+                    const decResponse = await fetch('/decrypt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            encryptedMessage: encData.encryptedMessage,
+                            encryptedKey: encData.encryptedKey,
+                            iv: encData.iv,
+                            signature: encData.signature,
+                            senderId: 'TestSender',
+                            recipientId: 'TestReceiver'
+                        })
+                    });
+                    await decResponse.json();
+                    const decEndTime = performance.now();
+                    decryptTimes.push(decEndTime - decStartTime);
+
+                    if ((i + 1) % 5 === 0) {
+                        resultsDiv.innerHTML = `<div class="info">Testing ${test.size} bytes: ${i + 1}/${iterations} iterations...</div>`;
+                    }
+                }
+
+                // Calculate statistics
+                const avgEncTime = encryptTimes.reduce((a, b) => a + b) / encryptTimes.length;
+                const avgDecTime = decryptTimes.reduce((a, b) => a + b) / decryptTimes.length;
+                const stdDevEnc = calculateStdDev(encryptTimes, avgEncTime);
+                const stdDevDec = calculateStdDev(decryptTimes, avgDecTime);
+                const ci95Enc = calculate95CI(stdDevEnc, encryptTimes.length);
+                const ci95Dec = calculate95CI(stdDevDec, decryptTimes.length);
+
+                testResults.decryption.push({
+                    size: test.size,
+                    avgEncTime,
+                    avgDecTime,
+                    stdDevEnc,
+                    stdDevDec,
+                    ci95Enc,
+                    ci95Dec,
+                    iterations,
+                    encryptTimes,
+                    decryptTimes
+                });
+            }
+
+            // Display results with statistics
+            let html = '<div class="success">✓ Decryption performance test complete</div>';
+            html += '<table><tr><th>Size</th><th>Encrypt Avg</th><th>Encrypt CI</th><th>Decrypt Avg</th><th>Decrypt CI</th><th>Total</th></tr>';
+
+            testResults.decryption.forEach(e => {
+                html += `<tr>
+                    <td>${e.size} bytes</td>
+                    <td>${e.avgEncTime.toFixed(2)} ms</td>
+                    <td>±${e.ci95Enc.toFixed(2)} ms</td>
+                    <td>${e.avgDecTime.toFixed(2)} ms</td>
+                    <td>±${e.ci95Dec.toFixed(2)} ms</td>
+                    <td>${(e.avgEncTime + e.avgDecTime).toFixed(2)} ms</td>
+                </tr>`;
+            });
+
+            html += '</table>';
+            resultsDiv.innerHTML = html;
+            updateSummary();
+        }
+
+        // Test 4: Correctness Testing
+        async function testCorrectness() {
+            const iterations = parseInt(document.getElementById('correctnessIterations').value);
+            const resultsDiv = document.getElementById('correctnessResults');
+            resultsDiv.innerHTML = '<div class="info">Running test...</div>';
+
+            let successCount = 0;
+            let signatureValidCount = 0;
+            let tamperedDetectedCount = 0;
+
+            for (let i = 0; i < iterations; i++) {
+                const message = `Test message ${i}: ${Math.random()}`;
+
+                // Encrypt
+                const encResponse = await fetch('/encrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        senderId: 'TestSender',
+                        recipientId: 'TestReceiver'
+                    })
+                });
+                const encData = await encResponse.json();
+
+                // Decrypt
+                const decResponse = await fetch('/decrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        encryptedMessage: encData.encryptedMessage,
+                        encryptedKey: encData.encryptedKey,
+                        iv: encData.iv,
+                        signature: encData.signature,
+                        senderId: 'TestSender',
+                        recipientId: 'TestReceiver'
+                    })
+                });
+                const decData = await decResponse.json();
+
+                if (decData.decryptedMessage === message) {
+                    successCount++;
+                }
+                if (decData.signatureValid) {
+                    signatureValidCount++;
+                }
+
+                // Test tamper detection
+                const tamperedSig = encData.signature.substring(0, encData.signature.length - 1) + 'x';
+                const tamperedResponse = await fetch('/decrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        encryptedMessage: encData.encryptedMessage,
+                        encryptedKey: encData.encryptedKey,
+                        iv: encData.iv,
+                        signature: tamperedSig,
+                        senderId: 'TestSender',
+                        recipientId: 'TestReceiver'
+                    })
+                });
+                const tamperedData = await tamperedResponse.json();
+                if (!tamperedData.signatureValid) {
+                    tamperedDetectedCount++;
+                }
+            }
+
+            testResults.correctness = {
+                iterations,
+                successCount,
+                signatureValidCount,
+                tamperedDetectedCount,
+                accuracy: (successCount / iterations * 100).toFixed(2),
+                signatureAccuracy: (signatureValidCount / iterations * 100).toFixed(2),
+                tamperDetection: (tamperedDetectedCount / iterations * 100).toFixed(2)
+            };
+
+            resultsDiv.innerHTML = `
+                <div class="success">✓ Test completed: ${iterations} iterations</div>
+                <div class="result-line"><strong>Encryption/Decryption Accuracy:</strong> ${successCount}/${iterations} (${testResults.correctness.accuracy}%)</div>
+                <div class="result-line"><strong>Signature Verification:</strong> ${signatureValidCount}/${iterations} (${testResults.correctness.signatureAccuracy}%)</div>
+                <div class="result-line"><strong>Tamper Detection:</strong> ${tamperedDetectedCount}/${iterations} (${testResults.correctness.tamperDetection}%)</div>
+            `;
+
+            updateSummary();
+        }
+
+        // Test 5: Multi-User Testing
+        async function testMultiUser() {
+            const userCount = parseInt(document.getElementById('userCount').value);
+            const resultsDiv = document.getElementById('multiUserResults');
+            resultsDiv.innerHTML = '<div class="info">Running test...</div>';
+
+            // Generate users
+            const users = [];
+            for (let i = 0; i < userCount; i++) {
+                await fetch('/generate-keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: `User${i}` })
+                });
+                users.push(`User${i}`);
+            }
+
+            // Test cross-communication
+            let successCount = 0;
+            const totalTests = Math.min(50, userCount * 2);
+
+            for (let i = 0; i < totalTests; i++) {
+                const sender = users[Math.floor(Math.random() * users.length)];
+                const receiver = users[Math.floor(Math.random() * users.length)];
+                
+                if (sender === receiver) continue;
+
+                try {
+                    const encResponse = await fetch('/encrypt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: `Test ${i}`,
+                            senderId: sender,
+                            recipientId: receiver
+                        })
+                    });
+                    const encData = await encResponse.json();
+
+                    const decResponse = await fetch('/decrypt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            encryptedMessage: encData.encryptedMessage,
+                            encryptedKey: encData.encryptedKey,
+                            iv: encData.iv,
+                            signature: encData.signature,
+                            senderId: sender,
+                            recipientId: receiver
+                        })
+                    });
+                    const decData = await decResponse.json();
+
+                    if (decData.decryptedMessage === `Test ${i}` && decData.signatureValid) {
+                        successCount++;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+
+            testResults.multiUser = {
+                userCount,
+                totalTests,
+                successCount,
+                successRate: (successCount / totalTests * 100).toFixed(2)
+            };
+
+            resultsDiv.innerHTML = `
+                <div class="success">✓ Test completed</div>
+                <div class="result-line"><strong>Users Created:</strong> ${userCount}</div>
+                <div class="result-line"><strong>Messages Tested:</strong> ${totalTests}</div>
+                <div class="result-line"><strong>Successful:</strong> ${successCount}/${totalTests} (${testResults.multiUser.successRate}%)</div>
+            `;
+
+            updateSummary();
+        }
+
+        // Test 6: Security Testing
+        async function testSecurity() {
+            const resultsDiv = document.getElementById('securityResults');
+            resultsDiv.innerHTML = '<div class="info">Running test...</div>';
+
+            const tests = {
+                validSignature: 0,
+                tamperedSignature: 0,
+                modifiedMessage: 0,
+                wrongSender: 0
+            };
+
+            // Test 1: Valid signature
+            for (let i = 0; i < 10; i++) {
+                const encResponse = await fetch('/encrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'Valid test',
+                        senderId: 'TestSender',
+                        recipientId: 'TestReceiver'
+                    })
+                });
+                const encData = await encResponse.json();
+
+                const decResponse = await fetch('/decrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        encryptedMessage: encData.encryptedMessage,
+                        encryptedKey: encData.encryptedKey,
+                        iv: encData.iv,
+                        signature: encData.signature,
+                        senderId: 'TestSender',
+                        recipientId: 'TestReceiver'
+                    })
+                });
+                const decData = await decResponse.json();
+                if (decData.signatureValid) tests.validSignature++;
+            }
+
+            // Test 2: Tampered signature
+            for (let i = 0; i < 10; i++) {
+                const encResponse = await fetch('/encrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'Tamper test',
+                        senderId: 'TestSender',
+                        recipientId: 'TestReceiver'
+                    })
+                });
+                const encData = await encResponse.json();
+
+                const tamperedSig = encData.signature.substring(0, 10) + 'x'.repeat(10) + encData.signature.substring(20);
+                const decResponse = await fetch('/decrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        encryptedMessage: encData.encryptedMessage,
+                        encryptedKey: encData.encryptedKey,
+                        iv: encData.iv,
+                        signature: tamperedSig,
+                        senderId: 'TestSender',
+                        recipientId: 'TestReceiver'
+                    })
+                });
+                const decData = await decResponse.json();
+                if (!decData.signatureValid) tests.tamperedSignature++;
+            }
+
+            testResults.security = tests;
+
+            resultsDiv.innerHTML = `
+                <div class="success">✓ Security test completed</div>
+                <div class="result-line"><strong>Valid Signature Detection:</strong> ${tests.validSignature}/10 (${tests.validSignature*10}%)</div>
+                <div class="result-line"><strong>Tampered Signature Detection:</strong> ${tests.tamperedSignature}/10 (${tests.tamperedSignature*10}%)</div>
+            `;
+
+            updateSummary();
+        }
+
+        // Update Summary
+        function updateSummary() {
+            const summarySection = document.getElementById('summarySection');
+            const statGrid = document.getElementById('statGrid');
+            
+            let html = '';
+
+            if (testResults.keyGeneration.avgTime) {
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-value">${testResults.keyGeneration.avgTime.toFixed(0)}</div>
+                        <div class="stat-label">Avg Key Gen (ms)</div>
+                    </div>
+                `;
+            }
+
+            if (testResults.encryption.length > 0) {
+                const avgTime = testResults.encryption.reduce((a, b) => a + b.time, 0) / testResults.encryption.length;
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-value">${avgTime.toFixed(0)}</div>
+                        <div class="stat-label">Avg Encrypt (ms)</div>
+                    </div>
+                `;
+            }
+
+            if (testResults.correctness.accuracy) {
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-value">${testResults.correctness.accuracy}%</div>
+                        <div class="stat-label">Accuracy</div>
+                    </div>
+                `;
+            }
+
+            if (testResults.multiUser.successRate) {
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-value">${testResults.multiUser.userCount}</div>
+                        <div class="stat-label">Users Tested</div>
+                    </div>
+                `;
+            }
+
+            if (html) {
+                statGrid.innerHTML = html;
+                summarySection.style.display = 'block';
+            }
+        }
+
+        // Export Results as JSON
+        async function exportResults() {
+            // Save to server
+            try {
+                const response = await fetch('/save-test-results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testResults)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert('Test results saved to server: ' + result.filename);
+                }
+            } catch (error) {
+                console.error('Failed to save to server:', error);
+            }
+            
+            // Also download locally
+            const dataStr = JSON.stringify(testResults, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `test-results-${new Date().toISOString()}.json`;
+            link.click();
+        }
+
+        // Export Results as CSV
+        function exportResultsCSV() {
+            let csv = 'Test Type,Metric,Value\n';
+            
+            if (testResults.keyGeneration.avgTime) {
+                csv += `Key Generation,Average Time (ms),${testResults.keyGeneration.avgTime.toFixed(2)}\n`;
+                csv += `Key Generation,Min Time (ms),${testResults.keyGeneration.minTime.toFixed(2)}\n`;
+                csv += `Key Generation,Max Time (ms),${testResults.keyGeneration.maxTime.toFixed(2)}\n`;
+            }
+
+            if (testResults.encryption.length > 0) {
+                testResults.encryption.forEach(e => {
+                    csv += `Encryption,${e.size} bytes,${e.time.toFixed(2)} ms\n`;
+                });
+            }
+
+            if (testResults.correctness.accuracy) {
+                csv += `Correctness,Accuracy,${testResults.correctness.accuracy}%\n`;
+                csv += `Correctness,Signature Verification,${testResults.correctness.signatureAccuracy}%\n`;
+            }
+
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `test-results-${new Date().toISOString()}.csv`;
+            link.click();
+        }
+
+        // Generate Report
+        function generateReport() {
+            const reportWindow = window.open('', '_blank');
+            reportWindow.document.write(`
+                <html>
+                <head>
+                    <title>Test Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        h1 { color: #667eea; }
+                        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                        th { background: #667eea; color: white; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Secure Messaging System - Test Report</h1>
+                    <p>Generated: ${new Date().toLocaleString()}</p>
+                    <pre>${JSON.stringify(testResults, null, 2)}</pre>
+                </body>
+                </html>
+            `);
+        }
+    </script>
+</body>
+</html>

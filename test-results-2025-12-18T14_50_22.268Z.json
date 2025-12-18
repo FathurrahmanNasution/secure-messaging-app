@@ -1,0 +1,86 @@
+{
+  "keyGeneration": {
+    "times": [
+      305.7000000011176,
+      1180.699999999255,
+      223.59999999962747,
+      118.30000000074506,
+      180.5
+    ],
+    "avgTime": 401.76000000014903,
+    "minTime": 118.30000000074506,
+    "maxTime": 1180.699999999255,
+    "successCount": 5,
+    "totalCount": 5
+  },
+  "encryption": [
+    {
+      "size": 16,
+      "time": 18.399999998509884,
+      "speed": 0.8491847826774666
+    },
+    {
+      "size": 128,
+      "time": 16.899999998509884,
+      "speed": 7.3964497047941755
+    },
+    {
+      "size": 1024,
+      "time": 27.5,
+      "speed": 36.36363636363637
+    },
+    {
+      "size": 10240,
+      "time": 87.80000000074506,
+      "speed": 113.89521639994466
+    },
+    {
+      "size": 102400,
+      "time": 479.90000000037253,
+      "speed": 208.3767451550789
+    }
+  ],
+  "decryption": [
+    {
+      "size": 16,
+      "encryptTime": 16.90000000037253,
+      "decryptTime": 17.5
+    },
+    {
+      "size": 128,
+      "encryptTime": 14.599999999627471,
+      "decryptTime": 14.400000000372529
+    },
+    {
+      "size": 1024,
+      "encryptTime": 18.09999999962747,
+      "decryptTime": 22.40000000037253
+    },
+    {
+      "size": 10240,
+      "encryptTime": 59.5,
+      "decryptTime": 93.5
+    }
+  ],
+  "correctness": {
+    "iterations": 100,
+    "successCount": 99,
+    "signatureValidCount": 98,
+    "tamperedDetectedCount": 100,
+    "accuracy": "99.00",
+    "signatureAccuracy": "98.00",
+    "tamperDetection": "100.00"
+  },
+  "multiUser": {
+    "userCount": 10,
+    "totalTests": 20,
+    "successCount": 16,
+    "successRate": "80.00"
+  },
+  "security": {
+    "validSignature": 10,
+    "tamperedSignature": 10,
+    "modifiedMessage": 0,
+    "wrongSender": 0
+  }
+}
