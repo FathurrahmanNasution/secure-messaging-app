@@ -228,8 +228,31 @@
 
                 const data = await response.json();
                 
-                if (data.error) {
-                    showStatus('decryptStatus', 'Error: ' + data.error, 'error');
+                // Check for error response (even if HTTP status is 200)
+                if (!response.ok || data.error) {
+                    showStatus('decryptStatus', '❌ ' + (data.error || 'Decryption failed'), 'error');
+                    document.getElementById('decryptedOutput').innerHTML = `
+                        <div class="output-section">
+                            <strong style="color: #dc3545;">❌ Error:</strong>
+                            <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border-radius: 5px;">
+                                ${data.error || 'Decryption failed'}
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Check if decryptedMessage is empty or undefined
+                if (!data.decryptedMessage) {
+                    showStatus('decryptStatus', '❌ Decryption failed - you are not the intended recipient', 'error');
+                    document.getElementById('decryptedOutput').innerHTML = `
+                        <div class="output-section">
+                            <strong style="color: #dc3545;">❌ Error:</strong>
+                            <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border-radius: 5px;">
+                                Decryption failed - you are not the intended recipient
+                            </div>
+                        </div>
+                    `;
                     return;
                 }
 
