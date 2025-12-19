@@ -216,6 +216,19 @@ function pkcs7Pad(data, blockSize = 16) {
 
 function pkcs7Unpad(data) {
   const padding = data[data.length - 1];
+  
+  // Validate padding
+  if (padding < 1 || padding > 16) {
+    throw new Error('Invalid PKCS7 padding');
+  }
+  
+  // Verify all padding bytes are correct
+  for (let i = data.length - padding; i < data.length; i++) {
+    if (data[i] !== padding) {
+      throw new Error('Invalid PKCS7 padding bytes');
+    }
+  }
+  
   return data.slice(0, data.length - padding);
 }
 
@@ -616,7 +629,33 @@ const server = http.createServer((req, res) => {
         try {
           // First, try to decrypt (only correct recipient can do this)
           const aesKey = rsaDecrypt(encryptedKey, users[recipientId].privateKey);
+          
+          // Validate AES key length (must be 32 bytes for AES-256)
+          if (!aesKey || aesKey.length !== 32) {
+            throw new Error('Invalid AES key length');
+          }
+          
           const decryptedMessage = aesDecrypt(encryptedMessage, aesKey, Buffer.from(iv, 'hex'));
+          
+          // Additional validation: check if decrypted message contains only valid UTF-8
+          if (!decryptedMessage || decryptedMessage.length === 0) {
+            throw new Error('Decryption produced empty result');
+          }
+          
+          // Check for excessive non-printable characters (indicates wrong key)
+          let nonPrintableCount = 0;
+          for (let i = 0; i < Math.min(decryptedMessage.length, 50); i++) {
+            const code = decryptedMessage.charCodeAt(i);
+            // Count characters that are not printable ASCII or common whitespace
+            if (code < 32 && code !== 9 && code !== 10 && code !== 13) {
+              nonPrintableCount++;
+            }
+          }
+          
+          // If more than 30% of checked characters are non-printable, likely wrong key
+          if (nonPrintableCount / Math.min(decryptedMessage.length, 50) > 0.3) {
+            throw new Error('Decrypted data contains invalid characters');
+          }
           
           // Only verify signature if decryption succeeded (Encrypt-Then-Sign)
           const isValid = rsaVerify(encryptedMessage, signature, users[senderId].publicKey);
