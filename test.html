@@ -809,56 +809,6 @@
             updateSummary();
         }
 
-        // Update Summary
-        function updateSummary() {
-            const summarySection = document.getElementById('summarySection');
-            const statGrid = document.getElementById('statGrid');
-            
-            let html = '';
-
-            if (testResults.keyGeneration.avgTime) {
-                html += `
-                    <div class="stat-item">
-                        <div class="stat-value">${testResults.keyGeneration.avgTime.toFixed(0)}</div>
-                        <div class="stat-label">Avg Key Gen (ms)</div>
-                    </div>
-                `;
-            }
-
-            if (testResults.encryption.length > 0) {
-                const avgTime = testResults.encryption.reduce((a, b) => a + b.time, 0) / testResults.encryption.length;
-                html += `
-                    <div class="stat-item">
-                        <div class="stat-value">${avgTime.toFixed(0)}</div>
-                        <div class="stat-label">Avg Encrypt (ms)</div>
-                    </div>
-                `;
-            }
-
-            if (testResults.correctness.accuracy) {
-                html += `
-                    <div class="stat-item">
-                        <div class="stat-value">${testResults.correctness.accuracy}%</div>
-                        <div class="stat-label">Accuracy</div>
-                    </div>
-                `;
-            }
-
-            if (testResults.multiUser.successRate) {
-                html += `
-                    <div class="stat-item">
-                        <div class="stat-value">${testResults.multiUser.userCount}</div>
-                        <div class="stat-label">Users Tested</div>
-                    </div>
-                `;
-            }
-
-            if (html) {
-                statGrid.innerHTML = html;
-                summarySection.style.display = 'block';
-            }
-        }
-
         // Export Results as JSON
         async function exportResults() {
             // Save to server
