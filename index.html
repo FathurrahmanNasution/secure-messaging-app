@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Messaging System - AES-256 + RSA-1024</title>
+    <title>Secure Messaging System - AES-256 + RSA-2048</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🔐 Secure Messaging System</h1>
-            <p class="subtitle">Hybrid AES-256 & RSA-1024 Encryption with Digital Signatures</p>
+            <p class="subtitle">Hybrid AES-256 & RSA-2048 Encryption with Digital Signatures</p>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="test.html" class="btn btn-primary" style="text-decoration: none; display: inline-block;">🧪 Run Tests</a>
+                <a href="visualizations.html" class="btn btn-primary" style="text-decoration: none; display: inline-block; margin-left: 10px;">📊 View Results</a>
+            </div>
         </header>
 
         <div class="main-grid">
@@ -88,6 +92,7 @@
                 <button onclick="decryptMessage()" class="btn btn-warning">🔓 Decrypt & Verify</button>
                 <div id="decryptStatus" class="status-message"></div>
                 <div id="decryptedOutput" class="crypto-output"></div>
+                
             </div>
         </div>
 
@@ -104,7 +109,7 @@
                 return;
             }
 
-            showStatus('keyStatus', 'Generating RSA-1024 keys... (may take a few seconds)', 'info');
+            showStatus('keyStatus', 'Generating RSA-2048 keys... (may take a few seconds)', 'info');
 
             try {
                 const response = await fetch('/generate-keys', {
@@ -186,7 +191,7 @@
                         <div class="hex-output">${data.encryptedMessage}</div>
                     </div>
                     <div class="output-section">
-                        <strong>Encrypted AES Key (RSA-1024):</strong>
+                        <strong>Encrypted AES Key (RSA-2048):</strong>
                         <div class="hex-output">${data.encryptedKey.substring(0, 200)}...</div>
                     </div>
                     <div class="output-section">

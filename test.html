@@ -218,8 +218,8 @@
 
         <!-- Test 1: Key Generation Performance -->
         <div class="test-section">
-            <h2>Test 1: RSA Key Generation Performance</h2>
-            <p>Measures time taken to generate RSA-1024 key pairs</p>
+            <h2>Test 1: RSA-2048 Key Generation Performance</h2>
+            <p>Measures time taken to generate RSA-2048 key pairs</p>
             <div class="test-controls">
                 <input type="number" id="keyGenCount" value="30" min="1" max="100" placeholder="Number of keys">
                 <button class="btn btn-primary" onclick="testKeyGeneration()">Run Test</button>
@@ -424,7 +424,9 @@
                 const maxTime = Math.max(...times);
                 const stdDev = calculateStdDev(times, avgTime);
                 const ci95 = calculate95CI(stdDev, times.length);
-                const speed = (test.size / 1024) / (avgTime / 1000);
+                const speed = (test.size / 1024) / (avgTime / 1000); // KB/s
+                const timeComplexity = avgTime / Math.log(test.size + 1); // Complexity factor
+                const bytesPerMs = test.size / avgTime;
 
                 testResults.encryption.push({
                     size: test.size,
@@ -434,6 +436,8 @@
                     stdDev,
                     ci95,
                     speed,
+                    complexity: timeComplexity,
+                    bytesPerMs,
                     iterations,
                     times
                 });
@@ -441,7 +445,7 @@
 
             // Display results with statistics
             let html = '<div class="success">✓ Encryption performance test complete</div>';
-            html += '<table><tr><th>Size</th><th>Avg Time</th><th>Std Dev</th><th>95% CI</th><th>Min</th><th>Max</th><th>Speed</th></tr>';
+            html += '<table><tr><th>Size</th><th>Avg Time</th><th>Std Dev</th><th>95% CI</th><th>Speed (KB/s)</th><th>Bytes/ms</th><th>Complexity</th></tr>';
 
             testResults.encryption.forEach(e => {
                 html += `<tr>
@@ -449,9 +453,9 @@
                     <td>${e.avgTime.toFixed(2)} ms</td>
                     <td>±${e.stdDev.toFixed(2)} ms</td>
                     <td>±${e.ci95.toFixed(2)} ms</td>
-                    <td>${e.minTime.toFixed(2)} ms</td>
-                    <td>${e.maxTime.toFixed(2)} ms</td>
                     <td>${e.speed.toFixed(2)} KB/s</td>
+                    <td>${e.bytesPerMs.toFixed(2)} B/ms</td>
+                    <td>${e.complexity.toFixed(4)}</td>
                 </tr>`;
             });
 
@@ -527,15 +531,21 @@
                 const stdDevDec = calculateStdDev(decryptTimes, avgDecTime);
                 const ci95Enc = calculate95CI(stdDevEnc, encryptTimes.length);
                 const ci95Dec = calculate95CI(stdDevDec, decryptTimes.length);
+                const totalTime = avgEncTime + avgDecTime;
+                const encComplexity = avgEncTime / Math.log(test.size + 1);
+                const decComplexity = avgDecTime / Math.log(test.size + 1);
 
                 testResults.decryption.push({
                     size: test.size,
                     avgEncTime,
                     avgDecTime,
+                    totalTime,
                     stdDevEnc,
                     stdDevDec,
                     ci95Enc,
                     ci95Dec,
+                    encComplexity,
+                    decComplexity,
                     iterations,
                     encryptTimes,
                     decryptTimes
@@ -544,16 +554,16 @@
 
             // Display results with statistics
             let html = '<div class="success">✓ Decryption performance test complete</div>';
-            html += '<table><tr><th>Size</th><th>Encrypt Avg</th><th>Encrypt CI</th><th>Decrypt Avg</th><th>Decrypt CI</th><th>Total</th></tr>';
+            html += '<table><tr><th>Size</th><th>Encrypt (ms)</th><th>Decrypt (ms)</th><th>Total (ms)</th><th>Enc Complexity</th><th>Dec Complexity</th></tr>';
 
             testResults.decryption.forEach(e => {
                 html += `<tr>
                     <td>${e.size} bytes</td>
                     <td>${e.avgEncTime.toFixed(2)} ms</td>
-                    <td>±${e.ci95Enc.toFixed(2)} ms</td>
                     <td>${e.avgDecTime.toFixed(2)} ms</td>
-                    <td>±${e.ci95Dec.toFixed(2)} ms</td>
-                    <td>${(e.avgEncTime + e.avgDecTime).toFixed(2)} ms</td>
+                    <td>${e.totalTime.toFixed(2)} ms</td>
+                    <td>${e.encComplexity.toFixed(4)}</td>
+                    <td>${e.decComplexity.toFixed(4)}</td>
                 </tr>`;
             });
 
@@ -666,22 +676,32 @@
                 users.push(`User${i}`);
             }
 
+            // Prevent infinite loop if only 1 user
+            if (userCount < 2) {
+                resultsDiv.innerHTML = '<div class="error">❌ Need at least 2 users for multi-user testing</div>';
+                return;
+            }
+
             // Test cross-communication
             let successCount = 0;
-            const totalTests = Math.min(50, userCount * 2);
+            let testsAttempted = 0;
+            const targetTests = Math.min(50, userCount * 2);
 
-            for (let i = 0; i < totalTests; i++) {
+            while (testsAttempted < targetTests) {
                 const sender = users[Math.floor(Math.random() * users.length)];
                 const receiver = users[Math.floor(Math.random() * users.length)];
                 
-                if (sender === receiver) continue;
+                if (sender === receiver) continue; // Don't count this as an attempted test
+
+                testsAttempted++;
+                resultsDiv.innerHTML = `<div class="info">Running test ${testsAttempted}/${targetTests}...</div>`;
 
                 try {
                     const encResponse = await fetch('/encrypt', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            message: `Test ${i}`,
+                            message: `Test ${testsAttempted}`,
                             senderId: sender,
                             recipientId: receiver
                         })
@@ -702,7 +722,7 @@
                     });
                     const decData = await decResponse.json();
 
-                    if (decData.decryptedMessage === `Test ${i}` && decData.signatureValid) {
+                    if (decData.decryptedMessage === `Test ${testsAttempted}` && decData.signatureValid) {
                         successCount++;
                     }
                 } catch (error) {
@@ -712,16 +732,16 @@
 
             testResults.multiUser = {
                 userCount,
-                totalTests,
+                totalTests: testsAttempted,
                 successCount,
-                successRate: (successCount / totalTests * 100).toFixed(2)
+                successRate: (successCount / testsAttempted * 100).toFixed(2)
             };
 
             resultsDiv.innerHTML = `
                 <div class="success">✓ Test completed</div>
                 <div class="result-line"><strong>Users Created:</strong> ${userCount}</div>
-                <div class="result-line"><strong>Messages Tested:</strong> ${totalTests}</div>
-                <div class="result-line"><strong>Successful:</strong> ${successCount}/${totalTests} (${testResults.multiUser.successRate}%)</div>
+                <div class="result-line"><strong>Messages Tested:</strong> ${testsAttempted}</div>
+                <div class="result-line"><strong>Successful:</strong> ${successCount}/${testsAttempted} (${testResults.multiUser.successRate}%)</div>
             `;
 
             updateSummary();
@@ -807,6 +827,58 @@
             `;
 
             updateSummary();
+        }
+
+        // Update Summary Section
+        function updateSummary() {
+            const summarySection = document.getElementById('summarySection');
+            const statGrid = document.getElementById('statGrid');
+            
+            if (!testResults.keyGeneration.avgTime && testResults.encryption.length === 0) {
+                return;
+            }
+            
+            let html = '';
+            
+            if (testResults.keyGeneration.avgTime) {
+                html += `<div class="stat-item">
+                    <div class="stat-value">${testResults.keyGeneration.avgTime.toFixed(0)}</div>
+                    <div class="stat-label">Avg Key Gen (ms)</div>
+                </div>`;
+            }
+            
+            if (testResults.encryption.length > 0) {
+                const maxSpeed = Math.max(...testResults.encryption.map(e => e.speed || 0));
+                html += `<div class="stat-item">
+                    <div class="stat-value">${maxSpeed.toFixed(0)}</div>
+                    <div class="stat-label">Max Speed (KB/s)</div>
+                </div>`;
+            }
+            
+            if (testResults.decryption.length > 0) {
+                const avgDecTime = testResults.decryption[0].avgDecTime || 0;
+                html += `<div class="stat-item">
+                    <div class="stat-value">${avgDecTime.toFixed(2)}</div>
+                    <div class="stat-label">Avg Decrypt (ms)</div>
+                </div>`;
+            }
+            
+            if (testResults.correctness.accuracy) {
+                html += `<div class="stat-item">
+                    <div class="stat-value">${testResults.correctness.accuracy}%</div>
+                    <div class="stat-label">Correctness Rate</div>
+                </div>`;
+            }
+            
+            if (testResults.multiUser.successRate) {
+                html += `<div class="stat-item">
+                    <div class="stat-value">${testResults.multiUser.successRate}%</div>
+                    <div class="stat-label">Multi-User Success</div>
+                </div>`;
+            }
+            
+            statGrid.innerHTML = html;
+            summarySection.style.display = 'block';
         }
 
         // Export Results as JSON

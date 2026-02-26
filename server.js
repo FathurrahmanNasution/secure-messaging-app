@@ -350,8 +350,8 @@ function modInverse(a, m) {
 
 // Generate RSA key pair
 function generateRSAKeyPair() {
-  const p = generatePrime(512);
-  const q = generatePrime(512);
+  const p = generatePrime(1024);
+  const q = generatePrime(1024);
   const n = p * q;
   const phi = (p - 1n) * (q - 1n);
   const e = 65537n;
@@ -690,5 +690,5 @@ const server = http.createServer((req, res) => {
 const PORT = 3000;
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  console.log('Pure manual AES-256 + RSA-1024 implementation');
+  console.log('Pure manual AES-256 + RSA-2048 implementation');
 });

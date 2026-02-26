@@ -74,23 +74,22 @@
     <div class="container">
         <h1>📊 Test Results Visualization</h1>
         
-        <!-- Key Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Average Key Generation</div>
-                <div class="stat-value">749<span style="font-size: 0.5em;">ms</span></div>
+                <div class="stat-label">Key Generation</div>
+                <div class="stat-value">-<span style="font-size: 0.5em;">ms</span></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Correctness Rate</div>
-                <div class="stat-value">100<span style="font-size: 0.5em;">%</span></div>
+                <div class="stat-value">-<span style="font-size: 0.5em;">%</span></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Encryption Speed (100KB)</div>
-                <div class="stat-value">211<span style="font-size: 0.5em;">KB/s</span></div>
+                <div class="stat-label">Max Speed</div>
+                <div class="stat-value">-<span style="font-size: 0.5em;">KB/s</span></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Multi-User Success</div>
-                <div class="stat-value">100<span style="font-size: 0.5em;">%</span></div>
+                <div class="stat-value">-<span style="font-size: 0.5em;">%</span></div>
             </div>
         </div>
 
@@ -98,31 +97,31 @@
         <div class="chart-grid">
             <!-- Chart 1: Key Generation Times -->
             <div class="chart-container">
-                <h3 class="chart-title">RSA Key Generation Performance</h3>
+                <h3 class="chart-title">RSA-2048 Key Generation</h3>
                 <canvas id="keyGenChart"></canvas>
             </div>
 
-            <!-- Chart 2: Encryption Performance -->
+            <!-- Chart 2: Encryption Time vs Message Size -->
             <div class="chart-container">
-                <h3 class="chart-title">Encryption Time vs Message Size</h3>
+                <h3 class="chart-title">Encryption Time vs Size</h3>
                 <canvas id="encryptChart"></canvas>
             </div>
 
-            <!-- Chart 3: Encryption Speed -->
+            <!-- Chart 3: Encryption Throughput -->
             <div class="chart-container">
-                <h3 class="chart-title">Encryption Throughput (KB/s)</h3>
+                <h3 class="chart-title">Encryption Speed (KB/s)</h3>
                 <canvas id="speedChart"></canvas>
             </div>
 
             <!-- Chart 4: Encrypt vs Decrypt -->
             <div class="chart-container">
-                <h3 class="chart-title">Encryption vs Decryption Time</h3>
+                <h3 class="chart-title">Encryption vs Decryption</h3>
                 <canvas id="compareChart"></canvas>
             </div>
 
             <!-- Chart 5: Correctness Tests -->
             <div class="chart-container">
-                <h3 class="chart-title">Correctness Test Results (100 iterations)</h3>
+                <h3 class="chart-title">Correctness & Signatures</h3>
                 <canvas id="correctnessChart"></canvas>
             </div>
 
@@ -186,10 +185,11 @@
             // Update stats cards
             const correctnessRate = ((testData.correctness.successCount / testData.correctness.iterations) * 100).toFixed(0);
             const multiUserRate = parseFloat(testData.multiUser.successRate).toFixed(0);
+            const maxSpeed = testData.encryption.length > 0 ? Math.max(...testData.encryption.map(e => e.speed)).toFixed(0) : '-';
             
             document.querySelector('.stats-grid').innerHTML = `
                 <div class="stat-card">
-                    <div class="stat-label">Average Key Generation</div>
+                    <div class="stat-label">Key Generation</div>
                     <div class="stat-value">${testData.keyGeneration.avgTime.toFixed(0)}<span style="font-size: 0.5em;">ms</span></div>
                 </div>
                 <div class="stat-card">
@@ -197,8 +197,8 @@
                     <div class="stat-value">${correctnessRate}<span style="font-size: 0.5em;">%</span></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Encryption Speed (100KB)</div>
-                    <div class="stat-value">${testData.encryption[4]?.speed.toFixed(0) || 'N/A'}<span style="font-size: 0.5em;">KB/s</span></div>
+                    <div class="stat-label">Max Speed</div>
+                    <div class="stat-value">${maxSpeed}<span style="font-size: 0.5em;">KB/s</span></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Multi-User Success</div>
@@ -301,20 +301,27 @@
         new Chart(document.getElementById('compareChart'), {
             type: 'bar',
             data: {
-                labels: ['16 B', '128 B', '1 KB', '10 KB'],
+                labels: ['16 B', '128 B', '1 KB', '10 KB', '100 KB'].slice(0, Math.min(testData.decryption.length + 1, 5)),
                 datasets: [
                     {
-                        label: 'Encryption Time',
-                        data: testData.decryption.map(d => d.avgEncTime || d.encryptTime),
+                        label: 'Encryption Time (ms)',
+                        data: testData.decryption.slice(0, 4).map(d => d.avgEncTime || 0),
                         backgroundColor: 'rgba(102, 126, 234, 0.7)',
                         borderColor: 'rgba(102, 126, 234, 1)',
                         borderWidth: 2
                     },
                     {
-                        label: 'Decryption Time',
-                        data: testData.decryption.map(d => d.avgDecTime || d.decryptTime),
+                        label: 'Decryption Time (ms)',
+                        data: testData.decryption.slice(0, 4).map(d => d.avgDecTime || 0),
                         backgroundColor: 'rgba(242, 153, 74, 0.7)',
                         borderColor: 'rgba(242, 153, 74, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Total Time (ms)',
+                        data: testData.decryption.slice(0, 4).map(d => d.totalTime || 0),
+                        backgroundColor: 'rgba(56, 239, 125, 0.5)',
+                        borderColor: 'rgba(56, 239, 125, 1)',
                         borderWidth: 2
                     }
                 ]
