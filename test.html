@@ -46,6 +46,15 @@
             font-size: 1.3em;
         }
 
+        .test-section p {
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .test-section p strong {
+            color: #f2994a;
+        }
+
         .test-controls {
             display: flex;
             gap: 10px;
@@ -229,8 +238,8 @@
 
         <!-- Test 2: Encryption Performance -->
         <div class="test-section">
-            <h2>Test 2: Encryption Performance (Different Message Sizes)</h2>
-            <p>Tests encryption speed with various message lengths</p>
+            <h2>Test 2: End-to-End Encryption Performance (Different Message Sizes)</h2>
+            <p>⚠️ <strong>Note:</strong> Measures <em>total time</em> including network latency, server processing, and encryption. For pure crypto performance, see Test 2b below.</p>
             <div class="test-controls">
                 <label>Iterations per size: <input type="number" id="encryptIterations" value="30" min="1" max="100" style="width: 80px;"></label>
                 <button class="btn btn-primary" onclick="testEncryptionPerformance()">Run Test</button>
@@ -238,10 +247,21 @@
             <div id="encryptResults" class="results"></div>
         </div>
 
+        <!-- Test 2b: Pure Crypto Performance -->
+        <div class="test-section">
+            <h2>Test 2b: Pure Crypto Performance (Client-Side Only)</h2>
+            <p>Measures <em>only</em> the cryptographic operations (AES-256 encryption) without network or server overhead</p>
+            <div class="test-controls">
+                <label>Iterations per size: <input type="number" id="pureCryptoIterations" value="100" min="1" max="1000" style="width: 80px;"></label>
+                <button class="btn btn-success" onclick="testPureCryptoPerformance()">Run Pure Crypto Test</button>
+            </div>
+            <div id="pureCryptoResults" class="results"></div>
+        </div>
+
         <!-- Test 3: Decryption Performance -->
         <div class="test-section">
-            <h2>Test 3: Decryption Performance</h2>
-            <p>Tests decryption speed and signature verification</p>
+            <h2>Test 3: End-to-End Decryption Performance</h2>
+            <p>⚠️ <strong>Note:</strong> Measures <em>total time</em> including network latency, server processing, decryption, and signature verification</p>
             <div class="test-controls">
                 <label>Iterations per size: <input type="number" id="decryptIterations" value="30" min="1" max="100" style="width: 80px;"></label>
                 <button class="btn btn-primary" onclick="testDecryptionPerformance()">Run Test</button>
@@ -301,6 +321,7 @@
         let testResults = {
             keyGeneration: [],
             encryption: [],
+            pureCrypto: [],
             decryption: [],
             correctness: {},
             multiUser: {},
@@ -460,6 +481,105 @@
             });
 
             html += '</table>';
+            html += '<div class="info">ℹ️ This measures total end-to-end time including network and server processing</div>';
+            resultsDiv.innerHTML = html;
+            updateSummary();
+        }
+
+        // Test 2b: Pure Crypto Performance (Client-Side Only)
+        async function testPureCryptoPerformance() {
+            const iterations = parseInt(document.getElementById('pureCryptoIterations')?.value || 100);
+            const resultsDiv = document.getElementById('pureCryptoResults');
+            resultsDiv.innerHTML = '<div class="info">Running pure crypto performance test...</div>';
+
+            const testCases = [
+                { size: 16, message: 'A'.repeat(16) },
+                { size: 128, message: 'A'.repeat(128) },
+                { size: 1024, message: 'A'.repeat(1024) },
+                { size: 10240, message: 'A'.repeat(10240) },
+                { size: 102400, message: 'A'.repeat(102400) }
+            ];
+
+            testResults.pureCrypto = [];
+
+            for (const test of testCases) {
+                const times = [];
+                resultsDiv.innerHTML = `<div class="info">Testing ${test.size} bytes (pure crypto): 0/${iterations} iterations...</div>`;
+
+                // Run multiple iterations
+                for (let i = 0; i < iterations; i++) {
+                    const startTime = performance.now();
+                    
+                    // Generate AES key (only measure encryption, not key gen)
+                    const aesKey = await crypto.subtle.generateKey(
+                        { name: 'AES-CBC', length: 256 },
+                        true,
+                        ['encrypt', 'decrypt']
+                    );
+                    
+                    // Generate IV
+                    const iv = crypto.getRandomValues(new Uint8Array(16));
+                    
+                    // Encode message
+                    const encoder = new TextEncoder();
+                    const messageData = encoder.encode(test.message);
+                    
+                    // Measure only AES encryption
+                    const cryptoStart = performance.now();
+                    const encrypted = await crypto.subtle.encrypt(
+                        { name: 'AES-CBC', iv: iv },
+                        aesKey,
+                        messageData
+                    );
+                    const cryptoEnd = performance.now();
+                    
+                    times.push(cryptoEnd - cryptoStart);
+
+                    if ((i + 1) % 10 === 0) {
+                        resultsDiv.innerHTML = `<div class="info">Testing ${test.size} bytes: ${i + 1}/${iterations} iterations...</div>`;
+                    }
+                }
+
+                // Calculate statistics
+                const avgTime = times.reduce((a, b) => a + b) / times.length;
+                const minTime = Math.min(...times);
+                const maxTime = Math.max(...times);
+                const stdDev = calculateStdDev(times, avgTime);
+                const ci95 = calculate95CI(stdDev, times.length);
+                const speed = (test.size / 1024) / (avgTime / 1000); // KB/s
+                const bytesPerMs = test.size / avgTime;
+
+                testResults.pureCrypto.push({
+                    size: test.size,
+                    avgTime,
+                    minTime,
+                    maxTime,
+                    stdDev,
+                    ci95,
+                    speed,
+                    bytesPerMs,
+                    iterations,
+                    times
+                });
+            }
+
+            // Display results
+            let html = '<div class="success">✓ Pure crypto performance test complete</div>';
+            html += '<table><tr><th>Size</th><th>Avg Time</th><th>Std Dev</th><th>95% CI</th><th>Speed (KB/s)</th><th>Throughput (MB/s)</th></tr>';
+
+            testResults.pureCrypto.forEach(e => {
+                html += `<tr>
+                    <td>${e.size} bytes</td>
+                    <td>${e.avgTime.toFixed(4)} ms</td>
+                    <td>±${e.stdDev.toFixed(4)} ms</td>
+                    <td>±${e.ci95.toFixed(4)} ms</td>
+                    <td>${e.speed.toFixed(2)} KB/s</td>
+                    <td>${(e.speed / 1024).toFixed(2)} MB/s</td>
+                </tr>`;
+            });
+
+            html += '</table>';
+            html += '<div class="success">ℹ️ This measures ONLY AES-256 encryption time (no network, no server, no RSA)</div>';
             resultsDiv.innerHTML = html;
             updateSummary();
         }
@@ -851,7 +971,15 @@
                 const maxSpeed = Math.max(...testResults.encryption.map(e => e.speed || 0));
                 html += `<div class="stat-item">
                     <div class="stat-value">${maxSpeed.toFixed(0)}</div>
-                    <div class="stat-label">Max Speed (KB/s)</div>
+                    <div class="stat-label">Max E2E Speed (KB/s)</div>
+                </div>`;
+            }
+            
+            if (testResults.pureCrypto && testResults.pureCrypto.length > 0) {
+                const maxPureSpeed = Math.max(...testResults.pureCrypto.map(e => e.speed || 0));
+                html += `<div class="stat-item">
+                    <div class="stat-value">${(maxPureSpeed / 1024).toFixed(1)}</div>
+                    <div class="stat-label">Max Pure Crypto (MB/s)</div>
                 </div>`;
             }
             

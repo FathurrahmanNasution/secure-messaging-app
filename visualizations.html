@@ -73,6 +73,11 @@
 <body>
     <div class="container">
         <h1>📊 Test Results Visualization</h1>
+        <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <strong>⚠️ Important Note:</strong> Encryption/Decryption charts below show <strong>end-to-end performance</strong> 
+            (includes network latency + server processing time). This is why smaller messages appear "slower" - 
+            the network/server overhead dominates. For pure cryptographic performance, run Test 2b in the test suite.
+        </div>
         
         <div class="stats-grid">
             <div class="stat-card">
@@ -103,19 +108,22 @@
 
             <!-- Chart 2: Encryption Time vs Message Size -->
             <div class="chart-container">
-                <h3 class="chart-title">Encryption Time vs Size</h3>
+                <h3 class="chart-title">End-to-End Encryption Time vs Size</h3>
+                <p style="font-size: 0.85em; color: #666; margin: -10px 0 10px 0;">(Includes network + server overhead)</p>
                 <canvas id="encryptChart"></canvas>
             </div>
 
             <!-- Chart 3: Encryption Throughput -->
             <div class="chart-container">
-                <h3 class="chart-title">Encryption Speed (KB/s)</h3>
+                <h3 class="chart-title">End-to-End Throughput (KB/s)</h3>
+                <p style="font-size: 0.85em; color: #666; margin: -10px 0 10px 0;">(Logarithmic scale - Higher for large messages due to overhead amortization)</p>
                 <canvas id="speedChart"></canvas>
             </div>
 
             <!-- Chart 4: Encrypt vs Decrypt -->
             <div class="chart-container">
-                <h3 class="chart-title">Encryption vs Decryption</h3>
+                <h3 class="chart-title">End-to-End: Encryption vs Decryption</h3>
+                <p style="font-size: 0.85em; color: #666; margin: -10px 0 10px 0;">(Total time including network roundtrips)</p>
                 <canvas id="compareChart"></canvas>
             </div>
 
@@ -159,6 +167,7 @@
                     maxTime: results.keyGeneration.maxTime || 0
                 },
                 encryption: results.encryption || [],
+                pureCrypto: results.pureCrypto || [],
                 decryption: results.decryption || [],
                 correctness: {
                     successCount: results.correctness.successCount || 0,
@@ -213,7 +222,7 @@
                 labels: ['Attempt 1', 'Attempt 2', 'Attempt 3', 'Attempt 4', 'Attempt 5', 'Average'],
                 datasets: [{
                     label: 'Time (ms)',
-                    data: [...testData.keyGeneration.times, testData.keyGeneration.avgTime],
+                    data: [...testData.keyGeneration.times.slice(0, 5), testData.keyGeneration.avgTime],
                     backgroundColor: [
                         'rgba(102, 126, 234, 0.7)',
                         'rgba(102, 126, 234, 0.7)',
@@ -240,6 +249,15 @@
                     y: {
                         beginAtZero: true,
                         title: { display: true, text: 'Time (ms)' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Time: ' + context.parsed.y.toFixed(2) + ' ms';
+                            }
+                        }
                     }
                 }
             }
@@ -268,6 +286,15 @@
                         beginAtZero: true,
                         title: { display: true, text: 'Time (ms)' }
                     }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Time: ' + context.parsed.y.toFixed(2) + ' ms';
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -290,8 +317,28 @@
                 maintainAspectRatio: true,
                 scales: {
                     y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Speed (KB/s)' }
+                        type: 'logarithmic',
+                        title: { display: true, text: 'Speed (KB/s) - Log Scale' },
+                        ticks: {
+                            callback: function(value, index, values) {
+                                if (value === 1 || value === 10 || value === 100 || value === 1000) {
+                                    return value.toFixed(0);
+                                }
+                                return null;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Speed: ' + context.parsed.y.toFixed(2) + ' KB/s';
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: false
                     }
                 }
             }
@@ -301,25 +348,25 @@
         new Chart(document.getElementById('compareChart'), {
             type: 'bar',
             data: {
-                labels: ['16 B', '128 B', '1 KB', '10 KB', '100 KB'].slice(0, Math.min(testData.decryption.length + 1, 5)),
+                labels: ['16 B', '128 B', '1 KB', '10 KB'].slice(0, testData.decryption.length),
                 datasets: [
                     {
                         label: 'Encryption Time (ms)',
-                        data: testData.decryption.slice(0, 4).map(d => d.avgEncTime || 0),
+                        data: testData.decryption.map(d => d.avgEncTime || 0),
                         backgroundColor: 'rgba(102, 126, 234, 0.7)',
                         borderColor: 'rgba(102, 126, 234, 1)',
                         borderWidth: 2
                     },
                     {
                         label: 'Decryption Time (ms)',
-                        data: testData.decryption.slice(0, 4).map(d => d.avgDecTime || 0),
+                        data: testData.decryption.map(d => d.avgDecTime || 0),
                         backgroundColor: 'rgba(242, 153, 74, 0.7)',
                         borderColor: 'rgba(242, 153, 74, 1)',
                         borderWidth: 2
                     },
                     {
                         label: 'Total Time (ms)',
-                        data: testData.decryption.slice(0, 4).map(d => d.totalTime || 0),
+                        data: testData.decryption.map(d => d.totalTime || 0),
                         backgroundColor: 'rgba(56, 239, 125, 0.5)',
                         borderColor: 'rgba(56, 239, 125, 1)',
                         borderWidth: 2
@@ -333,6 +380,15 @@
                     y: {
                         beginAtZero: true,
                         title: { display: true, text: 'Time (ms)' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' ms';
+                            }
+                        }
                     }
                 }
             }
@@ -400,7 +456,19 @@
                     y: {
                         beginAtZero: true,
                         max: 10,
+                        ticks: {
+                            stepSize: 1
+                        },
                         title: { display: true, text: 'Number of Tests' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Passed: ' + context.parsed.y + '/10 tests';
+                            }
+                        }
                     }
                 }
             }
