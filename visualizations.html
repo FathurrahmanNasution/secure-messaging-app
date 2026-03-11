@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Results Visualization</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
+            min-height: 100vh;
         }
         .container {
             max-width: 1400px;
@@ -18,465 +19,520 @@
             background: white;
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 50px rgba(0,0,0,0.2);
         }
-        h1 {
-            color: #667eea;
-            text-align: center;
-            margin-bottom: 30px;
+        h1 { color: #667eea; text-align: center; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 25px; font-size: 0.95em; }
+        .note-box {
+            background: #fff3cd; border: 2px solid #ffc107;
+            padding: 15px; border-radius: 8px; margin-bottom: 25px; font-size: 0.9em;
         }
-        .chart-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-        .chart-container {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-        .chart-title {
-            color: #667eea;
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            text-align: center;
+        .section-title {
+            color: #667eea; font-size: 1.25em; font-weight: 700;
+            margin: 30px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #e0e0e0;
         }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 15px; margin-bottom: 30px;
         }
         .stat-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
+            color: white; padding: 18px 15px; border-radius: 10px; text-align: center;
         }
-        .stat-value {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin: 10px 0;
+        .stat-card.green  { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .stat-card.orange { background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%); }
+        .stat-card.teal   { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); }
+        .stat-value { font-size: 2em; font-weight: bold; margin: 6px 0 2px 0; }
+        .stat-unit  { font-size: 0.45em; font-weight: normal; }
+        .stat-label { font-size: 0.78em; opacity: 0.92; }
+        .stat-sub   { font-size: 0.7em; opacity: 0.8; margin-top: 3px; }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px; margin-bottom: 30px;
         }
-        .stat-label {
-            font-size: 0.9em;
-            opacity: 0.9;
+        .chart-grid.single { grid-template-columns: 1fr; }
+        .chart-container {
+            background: #f8f9fa; padding: 20px; border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
-        canvas {
-            max-height: 400px;
+        .chart-title { color: #667eea; font-size: 1.05em; font-weight: 700; margin-bottom: 5px; text-align: center; }
+        .chart-subtitle { font-size: 0.78em; color: #777; text-align: center; margin-bottom: 12px; }
+        canvas { max-height: 340px; }
+        .ci-table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-top: 12px; }
+        .ci-table th, .ci-table td { border: 1px solid #ddd; padding: 7px 10px; text-align: right; }
+        .ci-table th { background: #667eea; color: white; text-align: center; }
+        .ci-table td:first-child { text-align: left; font-weight: 600; }
+        .ci-table tr:hover { background: #f0f4ff; }
+        #loading { text-align: center; padding: 60px; color: #667eea; font-size: 1.2em; }
+        #error-msg {
+            display: none; background: #fde8e8; border: 2px solid #e74c3c;
+            padding: 20px; border-radius: 8px; color: #c0392b; text-align: center;
         }
+        #content { display: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📊 Test Results Visualization</h1>
-        <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <strong>⚠️ Important Note:</strong> Encryption/Decryption charts below show <strong>end-to-end performance</strong> 
-            (includes network latency + server processing time). This is why smaller messages appear "slower" - 
-            the network/server overhead dominates. For pure cryptographic performance, run Test 2b in the test suite.
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Key Generation</div>
-                <div class="stat-value">-<span style="font-size: 0.5em;">ms</span></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Correctness Rate</div>
-                <div class="stat-value">-<span style="font-size: 0.5em;">%</span></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Max Speed</div>
-                <div class="stat-value">-<span style="font-size: 0.5em;">KB/s</span></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Multi-User Success</div>
-                <div class="stat-value">-<span style="font-size: 0.5em;">%</span></div>
-            </div>
+<div class="container">
+    <h1>&#x1F4CA; Test Results Visualization</h1>
+    <p class="subtitle">Secure Messaging System &mdash; AES-256 + RSA-2048 Evaluation</p>
+    <div id="loading">&#x23F3; Loading latest test results&hellip;</div>
+    <div id="error-msg"></div>
+    <div id="content">
+        <div class="note-box">
+            <strong>&#x26A0;&#xFE0F; Note:</strong>
+            <em>End-to-End (E2E)</em> times include network round-trip + server processing.
+            <em>Pure Crypto</em> times measure only client-side AES-256 (Web Crypto API) with zero network overhead.
+            Key generation uses the server-side manual RSA-2048 implementation.
         </div>
 
-        <!-- Charts -->
+        <div class="section-title">Overview</div>
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="section-title">Test 1 &middot; RSA-2048 Key Generation</div>
         <div class="chart-grid">
-            <!-- Chart 1: Key Generation Times -->
             <div class="chart-container">
-                <h3 class="chart-title">RSA-2048 Key Generation</h3>
-                <canvas id="keyGenChart"></canvas>
+                <div class="chart-title">Key Generation Times &mdash; All Runs</div>
+                <div class="chart-subtitle">Each bar = one attempt &middot; dashed red line = average</div>
+                <canvas id="keyGenAllChart"></canvas>
             </div>
-
-            <!-- Chart 2: Encryption Time vs Message Size -->
             <div class="chart-container">
-                <h3 class="chart-title">End-to-End Encryption Time vs Size</h3>
-                <p style="font-size: 0.85em; color: #666; margin: -10px 0 10px 0;">(Includes network + server overhead)</p>
-                <canvas id="encryptChart"></canvas>
+                <div class="chart-title">Key Generation &mdash; Min / Avg / Max</div>
+                <div class="chart-subtitle">Overall range across all runs</div>
+                <canvas id="keyGenSummaryChart"></canvas>
             </div>
+        </div>
 
-            <!-- Chart 3: Encryption Throughput -->
+        <div class="section-title">Test 2 &middot; End-to-End Encryption Performance</div>
+        <div class="chart-grid">
             <div class="chart-container">
-                <h3 class="chart-title">End-to-End Throughput (KB/s)</h3>
-                <p style="font-size: 0.85em; color: #666; margin: -10px 0 10px 0;">(Logarithmic scale - Higher for large messages due to overhead amortization)</p>
-                <canvas id="speedChart"></canvas>
+                <div class="chart-title">E2E Encryption Time vs Message Size</div>
+                <div class="chart-subtitle">Avg + Min + Max lines &middot; hover for &plusmn;95% CI</div>
+                <canvas id="encryptTimeChart"></canvas>
+                <div id="encryptCITable"></div>
             </div>
-
-            <!-- Chart 4: Encrypt vs Decrypt -->
             <div class="chart-container">
-                <h3 class="chart-title">End-to-End: Encryption vs Decryption</h3>
-                <p style="font-size: 0.85em; color: #666; margin: -10px 0 10px 0;">(Total time including network roundtrips)</p>
-                <canvas id="compareChart"></canvas>
+                <div class="chart-title">E2E Encryption Throughput (KB/s)</div>
+                <div class="chart-subtitle">Logarithmic scale &middot; overhead amortises at larger sizes</div>
+                <canvas id="encryptSpeedChart"></canvas>
             </div>
+        </div>
 
-            <!-- Chart 5: Correctness Tests -->
+        <div class="section-title">Test 2b &middot; Pure Crypto Performance (Client-Side AES-256 Only)</div>
+        <div class="chart-grid">
             <div class="chart-container">
-                <h3 class="chart-title">Correctness & Signatures</h3>
-                <canvas id="correctnessChart"></canvas>
+                <div class="chart-title">Pure AES-256 Encryption Time vs Size</div>
+                <div class="chart-subtitle">No network / server overhead &middot; 100 iterations per size</div>
+                <canvas id="pureCryptoTimeChart"></canvas>
+                <div id="pureCryptoCITable"></div>
             </div>
-
-            <!-- Chart 6: Security Tests -->
             <div class="chart-container">
-                <h3 class="chart-title">Security Test Results</h3>
+                <div class="chart-title">Pure Crypto Throughput (MB/s)</div>
+                <div class="chart-subtitle">Hardware-level AES throughput</div>
+                <canvas id="pureCryptoSpeedChart"></canvas>
+            </div>
+        </div>
+
+        <div class="section-title">Comparison &middot; E2E vs Pure Crypto Throughput</div>
+        <div class="chart-grid single">
+            <div class="chart-container">
+                <div class="chart-title">E2E vs Pure Crypto Throughput (KB/s)</div>
+                <div class="chart-subtitle">Shows cost of network + server overhead vs raw AES speed &middot; log scale</div>
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div>
+
+        <div class="section-title">Test 3 &middot; End-to-End Decryption Performance</div>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">Encrypt vs Decrypt Time by Message Size</div>
+                <div class="chart-subtitle">Grouped bars &middot; hover for &plusmn;95% CI</div>
+                <canvas id="decryptCompareChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Complexity Factor (Time / ln(size))</div>
+                <div class="chart-subtitle">Higher = more size-sensitive operation</div>
+                <canvas id="complexityChart"></canvas>
+            </div>
+        </div>
+
+        <div class="section-title">Test 4 &middot; Correctness &amp; Integrity</div>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">Correctness Metrics (100 iterations)</div>
+                <div class="chart-subtitle">Encryption accuracy &middot; Signature verification &middot; Tamper detection</div>
+                <canvas id="correctnessBarChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Encryption / Decryption Accuracy</div>
+                <div class="chart-subtitle">Pass / Fail breakdown</div>
+                <canvas id="correctnessDoughnut"></canvas>
+            </div>
+        </div>
+
+        <div class="section-title">Test 5 &middot; Multi-User Scalability</div>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">Multi-User Success Rate</div>
+                <div class="chart-subtitle">Cross-user encryption / decryption success</div>
+                <canvas id="multiUserChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Multi-User Message Breakdown</div>
+                <div class="chart-subtitle">Successful vs failed messages across all user pairs</div>
+                <canvas id="multiUserBarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="section-title">Test 6 &middot; Security Testing (Tamper Detection)</div>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">Security Test Results</div>
+                <div class="chart-subtitle">Valid signatures accepted &middot; Tampered / modified messages rejected</div>
                 <canvas id="securityChart"></canvas>
             </div>
+            <div class="chart-container">
+                <div class="chart-title">Security Coverage</div>
+                <div class="chart-subtitle">Attack vectors tested vs detected</div>
+                <canvas id="securityRadarChart"></canvas>
+            </div>
         </div>
+
     </div>
+</div>
 
-    <script>
-        // Fetch test data from server
-        async function loadTestData() {
-            try {
-                const response = await fetch('/latest-test-results');
-                if (!response.ok) {
-                    throw new Error('No test results found');
-                }
-                const results = await response.json();
-                return convertResults(results);
-            } catch (error) {
-                console.error('Failed to load test results:', error);
-                alert('No test results found. Please run tests first.');
-                return null;
-            }
-        }
+<script>
+const COLORS = {
+    blue:   { bg: "rgba(102,126,234,0.75)", border: "rgba(102,126,234,1)" },
+    purple: { bg: "rgba(118,75,162,0.75)",  border: "rgba(118,75,162,1)"  },
+    teal:   { bg: "rgba(17,153,142,0.75)",  border: "rgba(17,153,142,1)"  },
+    orange: { bg: "rgba(242,153,74,0.75)",  border: "rgba(242,153,74,1)"  },
+    green:  { bg: "rgba(56,239,125,0.75)",  border: "rgba(56,239,125,1)"  },
+    red:    { bg: "rgba(220,53,69,0.75)",   border: "rgba(220,53,69,1)"   }
+};
 
-        function convertResults(results) {
-            return {
-                keyGeneration: {
-                    times: results.keyGeneration.times || [],
-                    avgTime: results.keyGeneration.avgTime || 0,
-                    minTime: results.keyGeneration.minTime || 0,
-                    maxTime: results.keyGeneration.maxTime || 0
-                },
-                encryption: results.encryption || [],
-                pureCrypto: results.pureCrypto || [],
-                decryption: results.decryption || [],
-                correctness: {
-                    successCount: results.correctness.successCount || 0,
-                    iterations: results.correctness.iterations || 100,
-                    signatureValidCount: results.correctness.signatureValidCount || 0,
-                    tamperedDetectedCount: results.correctness.tamperedDetectedCount || 0
-                },
-                multiUser: {
-                    successRate: results.multiUser?.successRate || '0',
-                    successCount: results.multiUser?.successCount || 0,
-                    totalTests: results.multiUser?.totalTests || 0
-                },
-                security: {
-                    validSignature: results.security.validSignature || 0,
-                    tamperedSignature: results.security.tamperedSignature || 0
-                }
-            };
-        }
+// Match canvas resolution to screen pixel density (fixes blurry charts on HiDPI/retina displays)
+Chart.defaults.devicePixelRatio = window.devicePixelRatio || 2;
 
-        async function initializeCharts() {
-            const testData = await loadTestData();
-            if (!testData) return;
+function fmtMs(v, d){ return v == null ? "-" : v.toFixed(d!=null?d:2) + " ms"; }
+function sizeLabel(b){
+    if (b < 1024) return b + " B";
+    if (b < 1024*1024) return (b/1024).toFixed(0) + " KB";
+    return (b/1024/1024).toFixed(1) + " MB";
+}
+function buildCITable(rows){
+    let h = "<table class='ci-table'><tr><th>Size</th><th>Avg (ms)</th><th>Std Dev</th><th>95% CI</th><th>Min</th><th>Max</th></tr>";
+    rows.forEach(r => {
+        h += "<tr><td>" + sizeLabel(r.size) + "</td><td>" + r.avgTime.toFixed(4)
+           + "</td><td>&#xB1;" + r.stdDev.toFixed(4)
+           + "</td><td>&#xB1;" + r.ci95.toFixed(4)
+           + "</td><td>" + r.minTime.toFixed(4)
+           + "</td><td>" + r.maxTime.toFixed(4) + "</td></tr>";
+    });
+    return h + "</table>";
+}
 
-            // Update stats cards
-            const correctnessRate = ((testData.correctness.successCount / testData.correctness.iterations) * 100).toFixed(0);
-            const multiUserRate = parseFloat(testData.multiUser.successRate).toFixed(0);
-            const maxSpeed = testData.encryption.length > 0 ? Math.max(...testData.encryption.map(e => e.speed)).toFixed(0) : '-';
-            
-            document.querySelector('.stats-grid').innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-label">Key Generation</div>
-                    <div class="stat-value">${testData.keyGeneration.avgTime.toFixed(0)}<span style="font-size: 0.5em;">ms</span></div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Correctness Rate</div>
-                    <div class="stat-value">${correctnessRate}<span style="font-size: 0.5em;">%</span></div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Max Speed</div>
-                    <div class="stat-value">${maxSpeed}<span style="font-size: 0.5em;">KB/s</span></div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Multi-User Success</div>
-                    <div class="stat-value">${multiUserRate}<span style="font-size: 0.5em;">%</span></div>
-                </div>
-            `;
+async function init(){
+    try {
+        const resp = await fetch("/latest-test-results");
+        if (!resp.ok) throw new Error("No test results found. Run the tests first.");
+        const raw = await resp.json();
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("content").style.display = "block";
+        const d = {
+            keyGen: raw.keyGeneration || {},
+            enc:    raw.encryption    || [],
+            pure:   raw.pureCrypto    || [],
+            dec:    raw.decryption    || [],
+            corr:   raw.correctness   || {},
+            mu:     raw.multiUser     || {},
+            sec:    raw.security      || {}
+        };
+        buildStats(d);
+        buildKeyGenCharts(d.keyGen);
+        buildEncryptCharts(d.enc);
+        buildPureCryptoCharts(d.pure);
+        buildComparisonChart(d.enc, d.pure);
+        buildDecryptCharts(d.dec);
+        buildCorrectnessCharts(d.corr);
+        buildMultiUserCharts(d.mu);
+        buildSecurityCharts(d.sec);
+    } catch(e) {
+        document.getElementById("loading").style.display = "none";
+        var el = document.getElementById("error-msg");
+        el.textContent = "Failed to load: " + e.message;
+        el.style.display = "block";
+    }
+}
 
-        // Chart 1: Key Generation Times
-        new Chart(document.getElementById('keyGenChart'), {
-            type: 'bar',
-            data: {
-                labels: ['Attempt 1', 'Attempt 2', 'Attempt 3', 'Attempt 4', 'Attempt 5', 'Average'],
-                datasets: [{
-                    label: 'Time (ms)',
-                    data: [...testData.keyGeneration.times.slice(0, 5), testData.keyGeneration.avgTime],
-                    backgroundColor: [
-                        'rgba(102, 126, 234, 0.7)',
-                        'rgba(102, 126, 234, 0.7)',
-                        'rgba(102, 126, 234, 0.7)',
-                        'rgba(102, 126, 234, 0.7)',
-                        'rgba(102, 126, 234, 0.7)',
-                        'rgba(118, 75, 162, 0.9)'
-                    ],
-                    borderColor: [
-                        'rgba(102, 126, 234, 1)',
-                        'rgba(102, 126, 234, 1)',
-                        'rgba(102, 126, 234, 1)',
-                        'rgba(102, 126, 234, 1)',
-                        'rgba(102, 126, 234, 1)',
-                        'rgba(118, 75, 162, 1)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Time (ms)' }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'Time: ' + context.parsed.y.toFixed(2) + ' ms';
-                            }
-                        }
-                    }
-                }
-            }
-        });
+function buildStats(d){
+    const kg = d.keyGen, c = d.corr, mu = d.mu, enc = d.enc, pure = d.pure;
+    const maxE2E  = enc.length  ? Math.max(...enc.map(e => e.speed||0))  : null;
+    const maxPure = pure.length ? Math.max(...pure.map(e => e.speed||0)) : null;
+    const cards = [
+        { label:"Avg Key Gen",      value: kg.avgTime!=null ? kg.avgTime.toFixed(0)  : "-", unit:"ms",
+          sub: kg.minTime!=null ? "min "+kg.minTime.toFixed(0)+" &middot; max "+kg.maxTime.toFixed(0)+" ms" : "", cls:"" },
+        { label:"Correctness",      value: c.accuracy!=null ? c.accuracy         : "-",   unit:"%",
+          sub: (c.successCount||0)+"/"+(c.iterations||0)+" tests passed",                  cls:"green" },
+        { label:"Sig Verification", value: c.signatureAccuracy!=null ? c.signatureAccuracy : "-", unit:"%",
+          sub: (c.signatureValidCount||0)+"/"+(c.iterations||0)+" valid",                  cls:"teal" },
+        { label:"Tamper Detection", value: c.tamperDetection!=null ? c.tamperDetection     : "-", unit:"%",
+          sub: (c.tamperedDetectedCount||0)+"/"+(c.iterations||0)+" caught",               cls:"orange" },
+        { label:"Max E2E Speed",    value: maxE2E!=null  ? maxE2E.toFixed(0)           : "-", unit:"KB/s",
+          sub:"incl. network overhead",                                                    cls:"" },
+        { label:"Max Pure Crypto",  value: maxPure!=null ? (maxPure/1024).toFixed(1)   : "-", unit:"MB/s",
+          sub:"AES-256 only",                                                              cls:"teal" },
+        { label:"Multi-User",       value: mu.successRate!=null ? parseFloat(mu.successRate).toFixed(0) : "-", unit:"%",
+          sub: mu.totalTests ? (mu.successCount)+"/"+(mu.totalTests)+" messages" : "",    cls:"green" }
+    ];
+    document.getElementById("statsGrid").innerHTML = cards.map(c =>
+        "<div class='stat-card "+c.cls+"'>"
+        +"<div class='stat-label'>"+c.label+"</div>"
+        +"<div class='stat-value'>"+c.value+"<span class='stat-unit'>"+c.unit+"</span></div>"
+        +"<div class='stat-sub'>"+c.sub+"</div>"
+        +"</div>").join("");
+}
 
-        // Chart 2: Encryption Time vs Message Size
-        new Chart(document.getElementById('encryptChart'), {
-            type: 'line',
-            data: {
-                labels: ['16 B', '128 B', '1 KB', '10 KB', '100 KB'],
-                datasets: [{
-                    label: 'Encryption Time (ms)',
-                    data: testData.encryption.map(e => e.avgTime || e.time),
-                    borderColor: 'rgba(102, 126, 234, 1)',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    borderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Time (ms)' }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'Time: ' + context.parsed.y.toFixed(2) + ' ms';
-                            }
-                        }
-                    }
-                }
-            }
-        });
+function buildKeyGenCharts(kg){
+    const times = kg.times || [];
+    const avg   = kg.avgTime || 0;
+    new Chart(document.getElementById("keyGenAllChart"), {
+        type:"bar",
+        data:{ labels: times.map((_,i)=>"Run "+(i+1)),
+               datasets:[{ label:"Time (ms)", data:times,
+                   backgroundColor: times.map(t=> t<avg ? COLORS.teal.bg : COLORS.blue.bg),
+                   borderColor:     times.map(t=> t<avg ? COLORS.teal.border : COLORS.blue.border),
+                   borderWidth:1 }] },
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ legend:{display:false},
+                tooltip:{ callbacks:{ label: ctx => fmtMs(ctx.parsed.y)+" (avg "+fmtMs(avg)+")" }}},
+            scales:{ y:{ beginAtZero:true, title:{display:true,text:"Time (ms)"} },
+                     x:{ ticks:{ maxTicksLimit:12 } } } },
+        plugins:[{ id:"avgLine", afterDraw(chart){
+            const {ctx,scales:{y},chartArea:{left,right}} = chart;
+            const yp = y.getPixelForValue(avg);
+            ctx.save(); ctx.setLineDash([6,4]);
+            ctx.strokeStyle="rgba(220,53,69,0.9)"; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.moveTo(left,yp); ctx.lineTo(right,yp); ctx.stroke();
+            ctx.fillStyle="rgba(220,53,69,0.9)"; ctx.font="11px Segoe UI";
+            ctx.fillText("avg "+avg.toFixed(0)+" ms", right-78, yp-5);
+            ctx.restore();
+        }}]
+    });
+    new Chart(document.getElementById("keyGenSummaryChart"), {
+        type:"bar",
+        data:{ labels:["Minimum","Average","Maximum"],
+               datasets:[{ label:"Time (ms)", data:[kg.minTime,kg.avgTime,kg.maxTime],
+                   backgroundColor:[COLORS.teal.bg,COLORS.blue.bg,COLORS.orange.bg],
+                   borderColor:[COLORS.teal.border,COLORS.blue.border,COLORS.orange.border],
+                   borderWidth:2 }] },
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ legend:{display:false},
+                tooltip:{ callbacks:{ label: ctx => fmtMs(ctx.parsed.y) }}},
+            scales:{ y:{ beginAtZero:true, title:{display:true,text:"Time (ms)"} } } }
+    });
+}
 
-        // Chart 3: Encryption Speed
-        new Chart(document.getElementById('speedChart'), {
-            type: 'bar',
-            data: {
-                labels: ['16 B', '128 B', '1 KB', '10 KB', '100 KB'],
-                datasets: [{
-                    label: 'Throughput (KB/s)',
-                    data: testData.encryption.map(e => e.speed),
-                    backgroundColor: 'rgba(17, 153, 142, 0.7)',
-                    borderColor: 'rgba(17, 153, 142, 1)',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    y: {
-                        type: 'logarithmic',
-                        title: { display: true, text: 'Speed (KB/s) - Log Scale' },
-                        ticks: {
-                            callback: function(value, index, values) {
-                                if (value === 1 || value === 10 || value === 100 || value === 1000) {
-                                    return value.toFixed(0);
-                                }
-                                return null;
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'Speed: ' + context.parsed.y.toFixed(2) + ' KB/s';
-                            }
-                        }
-                    },
-                    datalabels: {
-                        display: false
-                    }
-                }
-            }
-        });
+function buildEncryptCharts(enc){
+    if (!enc.length) return;
+    const labels = enc.map(e=>sizeLabel(e.size));
+    new Chart(document.getElementById("encryptTimeChart"), {
+        type:"line",
+        data:{ labels, datasets:[
+            { label:"Avg (ms)", data:enc.map(e=>e.avgTime),
+              borderColor:COLORS.blue.border, backgroundColor:COLORS.blue.bg, tension:0.35, fill:true, borderWidth:3, pointRadius:5 },
+            { label:"Min (ms)", data:enc.map(e=>e.minTime),
+              borderColor:COLORS.teal.border, backgroundColor:"transparent", borderDash:[5,4], borderWidth:1.5, pointRadius:3, tension:0.35 },
+            { label:"Max (ms)", data:enc.map(e=>e.maxTime),
+              borderColor:COLORS.orange.border, backgroundColor:"transparent", borderDash:[5,4], borderWidth:1.5, pointRadius:3, tension:0.35 }
+        ]},
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ tooltip:{ callbacks:{ afterBody: items => {
+                const e=enc[items[0].dataIndex];
+                return ["Std Dev: \xB1"+e.stdDev.toFixed(3)+" ms","95% CI:  \xB1"+e.ci95.toFixed(3)+" ms","B/ms: "+e.bytesPerMs.toFixed(2)];
+            }}}},
+            scales:{ y:{ beginAtZero:true, title:{display:true,text:"Time (ms)"} } } }
+    });
+    document.getElementById("encryptCITable").innerHTML = buildCITable(enc);
+    new Chart(document.getElementById("encryptSpeedChart"), {
+        type:"bar",
+        data:{ labels, datasets:[{ label:"Throughput (KB/s)", data:enc.map(e=>e.speed),
+            backgroundColor:COLORS.teal.bg, borderColor:COLORS.teal.border, borderWidth:2 }] },
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ tooltip:{ callbacks:{ label: ctx => ctx.parsed.y.toFixed(1)+" KB/s ("+(ctx.parsed.y/1024).toFixed(2)+" MB/s)" }}},
+            scales:{ y:{ type:"logarithmic", title:{display:true,text:"KB/s (log)"},
+                ticks:{ callback: v => Number.isInteger(Math.log10(v)) ? v.toLocaleString() : null } } } }
+    });
+}
 
-        // Chart 4: Encryption vs Decryption
-        new Chart(document.getElementById('compareChart'), {
-            type: 'bar',
-            data: {
-                labels: ['16 B', '128 B', '1 KB', '10 KB'].slice(0, testData.decryption.length),
-                datasets: [
-                    {
-                        label: 'Encryption Time (ms)',
-                        data: testData.decryption.map(d => d.avgEncTime || 0),
-                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
-                        borderColor: 'rgba(102, 126, 234, 1)',
-                        borderWidth: 2
-                    },
-                    {
-                        label: 'Decryption Time (ms)',
-                        data: testData.decryption.map(d => d.avgDecTime || 0),
-                        backgroundColor: 'rgba(242, 153, 74, 0.7)',
-                        borderColor: 'rgba(242, 153, 74, 1)',
-                        borderWidth: 2
-                    },
-                    {
-                        label: 'Total Time (ms)',
-                        data: testData.decryption.map(d => d.totalTime || 0),
-                        backgroundColor: 'rgba(56, 239, 125, 0.5)',
-                        borderColor: 'rgba(56, 239, 125, 1)',
-                        borderWidth: 2
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Time (ms)' }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' ms';
-                            }
-                        }
-                    }
-                }
-            }
-        });
+function buildPureCryptoCharts(pure){
+    if (!pure.length) return;
+    const labels = pure.map(e=>sizeLabel(e.size));
+    new Chart(document.getElementById("pureCryptoTimeChart"), {
+        type:"line",
+        data:{ labels, datasets:[
+            { label:"Avg AES (ms)", data:pure.map(e=>e.avgTime),
+              borderColor:COLORS.purple.border, backgroundColor:COLORS.purple.bg, tension:0.35, fill:true, borderWidth:3, pointRadius:5 },
+            { label:"Max (ms)", data:pure.map(e=>e.maxTime),
+              borderColor:COLORS.orange.border, backgroundColor:"transparent", borderDash:[5,4], borderWidth:1.5, pointRadius:3, tension:0.35 }
+        ]},
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ tooltip:{ callbacks:{ afterBody: items => {
+                const e=pure[items[0].dataIndex];
+                return ["Std Dev: \xB1"+e.stdDev.toFixed(4)+" ms","95% CI:  \xB1"+e.ci95.toFixed(4)+" ms","MB/s: "+(e.speed/1024).toFixed(2)];
+            }}}},
+            scales:{ y:{ beginAtZero:true, title:{display:true,text:"Time (ms)"} } } }
+    });
+    document.getElementById("pureCryptoCITable").innerHTML = buildCITable(pure);
+    new Chart(document.getElementById("pureCryptoSpeedChart"), {
+        type:"bar",
+        data:{ labels, datasets:[{ label:"Throughput (MB/s)", data:pure.map(e=>e.speed/1024),
+            backgroundColor:COLORS.purple.bg, borderColor:COLORS.purple.border, borderWidth:2 }] },
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ tooltip:{ callbacks:{ label: ctx => ctx.parsed.y.toFixed(3)+" MB/s ("+(ctx.parsed.y*1024).toFixed(0)+" KB/s)" }}},
+            scales:{ y:{ beginAtZero:true, title:{display:true,text:"Throughput (MB/s)"} } } }
+    });
+}
 
-        // Chart 5: Correctness Results
-        const failedCount = testData.correctness.iterations - testData.correctness.successCount;
-        const correctnessPercent = ((testData.correctness.successCount / testData.correctness.iterations) * 100).toFixed(2);
-        
-        new Chart(document.getElementById('correctnessChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Successful', 'Failed'],
-                datasets: [{
-                    data: [testData.correctness.successCount, failedCount],
-                    backgroundColor: [
-                        'rgba(56, 239, 125, 0.8)',
-                        'rgba(220, 53, 69, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(56, 239, 125, 1)',
-                        'rgba(220, 53, 69, 1)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    title: {
-                        display: true,
-                        text: `${correctnessPercent}% Success Rate (${testData.correctness.successCount}/${testData.correctness.iterations})`
-                    }
-                }
-            }
-        });
+function buildComparisonChart(enc,pure){
+    if (!enc.length || !pure.length) return;
+    const sizes=[16,128,1024,10240,102400];
+    const em=Object.fromEntries(enc.map(e=>[e.size,e.speed]));
+    const pm=Object.fromEntries(pure.map(e=>[e.size,e.speed]));
+    new Chart(document.getElementById("comparisonChart"), {
+        type:"bar",
+        data:{ labels:sizes.map(sizeLabel), datasets:[
+            { label:"E2E (KB/s)",        data:sizes.map(s=>em[s]||null), backgroundColor:COLORS.blue.bg,   borderColor:COLORS.blue.border,   borderWidth:2 },
+            { label:"Pure Crypto (KB/s)", data:sizes.map(s=>pm[s]||null), backgroundColor:COLORS.teal.bg,   borderColor:COLORS.teal.border,   borderWidth:2 }
+        ]},
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+": "+ctx.parsed.y.toFixed(0)+" KB/s ("+(ctx.parsed.y/1024).toFixed(2)+" MB/s)" }}},
+            scales:{ y:{ type:"logarithmic", title:{display:true,text:"KB/s (log scale)"},
+                ticks:{ callback: v => Number.isInteger(Math.log10(v)) ? v.toLocaleString() : null } } } }
+    });
+}
 
-        // Chart 6: Security Tests
-        new Chart(document.getElementById('securityChart'), {
-            type: 'bar',
-            data: {
-                labels: ['Valid Signatures\nAccepted', 'Tampered Signatures\nRejected'],
-                datasets: [{
-                    label: 'Tests Passed',
-                    data: [testData.security.validSignature, testData.security.tamperedSignature],
-                    backgroundColor: [
-                        'rgba(56, 239, 125, 0.7)',
-                        'rgba(242, 153, 74, 0.7)'
-                    ],
-                    borderColor: [
-                        'rgba(56, 239, 125, 1)',
-                        'rgba(242, 153, 74, 1)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 10,
-                        ticks: {
-                            stepSize: 1
-                        },
-                        title: { display: true, text: 'Number of Tests' }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'Passed: ' + context.parsed.y + '/10 tests';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        }
+function buildDecryptCharts(dec){
+    if (!dec.length) return;
+    const labels=dec.map(d=>sizeLabel(d.size));
+    new Chart(document.getElementById("decryptCompareChart"), {
+        type:"bar",
+        data:{ labels, datasets:[
+            { label:"Encrypt (ms)", data:dec.map(d=>d.avgEncTime), backgroundColor:COLORS.blue.bg,   borderColor:COLORS.blue.border,   borderWidth:2 },
+            { label:"Decrypt (ms)", data:dec.map(d=>d.avgDecTime), backgroundColor:COLORS.orange.bg, borderColor:COLORS.orange.border, borderWidth:2 },
+            { label:"Total (ms)",   data:dec.map(d=>d.totalTime),  backgroundColor:COLORS.green.bg,  borderColor:COLORS.green.border,  borderWidth:2 }
+        ]},
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ tooltip:{ callbacks:{ afterBody: items => {
+                const d=dec[items[0].dataIndex];
+                return ["Enc \xB195%CI: \xB1"+d.ci95Enc.toFixed(3)+" ms","Dec \xB195%CI: \xB1"+d.ci95Dec.toFixed(3)+" ms"];
+            }}}},
+            scales:{ y:{ beginAtZero:true, title:{display:true,text:"Time (ms)"} } } }
+    });
+    new Chart(document.getElementById("complexityChart"), {
+        type:"line",
+        data:{ labels, datasets:[
+            { label:"Encrypt complexity", data:dec.map(d=>d.encComplexity),
+              borderColor:COLORS.blue.border, backgroundColor:"transparent", borderWidth:2, pointRadius:5, tension:0.35 },
+            { label:"Decrypt complexity", data:dec.map(d=>d.decComplexity),
+              borderColor:COLORS.orange.border, backgroundColor:"transparent", borderWidth:2, pointRadius:5, tension:0.35 }
+        ]},
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+": "+ctx.parsed.y.toFixed(4) }}},
+            scales:{ y:{ beginAtZero:true, title:{display:true,text:"Complexity factor"} } } }
+    });
+}
 
-        // Initialize charts when page loads
-        initializeCharts();
-    </script>
+function buildCorrectnessCharts(c){
+    const total=c.iterations||100, succ=c.successCount||0, sigV=c.signatureValidCount||0, tamp=c.tamperedDetectedCount||0;
+    new Chart(document.getElementById("correctnessBarChart"), {
+        type:"bar",
+        data:{ labels:["Encrypt/Decrypt Accuracy","Signature Verification","Tamper Detection"],
+               datasets:[
+                   { label:"Passed", data:[succ,sigV,tamp],
+                     backgroundColor:[COLORS.green.bg,COLORS.teal.bg,COLORS.orange.bg],
+                     borderColor:[COLORS.green.border,COLORS.teal.border,COLORS.orange.border], borderWidth:2 },
+                   { label:"Target ("+total+")", data:[total,total,total],
+                     backgroundColor:"rgba(200,200,200,0.3)", borderColor:"rgba(150,150,150,0.7)", borderWidth:1 }
+               ]},
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+": "+ctx.parsed.y+"/"+(total)+" ("+((ctx.parsed.y/total)*100).toFixed(1)+"%)" }}},
+            scales:{ y:{ beginAtZero:true, max:total+5, title:{display:true,text:"Count"} } } }
+    });
+    const failed=total-succ;
+    new Chart(document.getElementById("correctnessDoughnut"), {
+        type:"doughnut",
+        data:{ labels:["Passed","Failed"],
+               datasets:[{ data:[succ,failed],
+                   backgroundColor:[COLORS.green.bg,COLORS.red.bg],
+                   borderColor:[COLORS.green.border,COLORS.red.border], borderWidth:2 }] },
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ legend:{position:"bottom"},
+                title:{ display:true, text: (succ/total*100).toFixed(2)+"% — "+succ+"/"+total+" Correct" },
+                tooltip:{ callbacks:{ label: ctx => ctx.label+": "+ctx.parsed+" ("+(ctx.parsed/total*100).toFixed(1)+"%)" }} } }
+    });
+}
+
+function buildMultiUserCharts(mu){
+    const muTotal=mu.totalTests||0, muSucc=mu.successCount||0, muFail=muTotal-muSucc;
+    const rate = parseFloat(mu.successRate||0);
+    new Chart(document.getElementById("multiUserChart"), {
+        type:"doughnut",
+        data:{ labels:["Successful","Failed"],
+               datasets:[{ data:[muSucc,muFail],
+                  backgroundColor:[COLORS.green.bg,COLORS.red.bg],
+                  borderColor:[COLORS.green.border,COLORS.red.border], borderWidth:2 }] },
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ legend:{position:"bottom"},
+                title:{ display:true, text: rate.toFixed(1)+"% — "+muSucc+"/"+muTotal+" Messages" },
+                tooltip:{ callbacks:{ label: ctx => ctx.label+": "+ctx.parsed+" ("+(muTotal?ctx.parsed/muTotal*100:0).toFixed(1)+"%)" }} } }
+    });
+    new Chart(document.getElementById("multiUserBarChart"), {
+        type:"bar",
+        data:{ labels:["Total Tests","Successful","Failed"],
+               datasets:[{ label:"Messages", data:[muTotal, muSucc, muFail],
+                   backgroundColor:[COLORS.blue.bg, COLORS.green.bg, COLORS.red.bg],
+                   borderColor:[COLORS.blue.border, COLORS.green.border, COLORS.red.border],
+                   borderWidth:2 }] },
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ legend:{display:false},
+                tooltip:{ callbacks:{ label: ctx => ctx.parsed.y+" messages"+(muTotal&&ctx.dataIndex>0?" ("+(ctx.parsed.y/muTotal*100).toFixed(1)+"%)":"") }}},
+            scales:{ y:{ beginAtZero:true, ticks:{stepSize:1}, title:{display:true,text:"Count"} } } }
+    });
+}
+
+function buildSecurityCharts(sec){
+    const valid=sec.validSignature||0, tamped=sec.tamperedSignature||0;
+    const modified=sec.modifiedMessage||0, wrongSender=sec.wrongSender||0;
+    const maxV=Math.max(valid,tamped,modified,wrongSender,10);
+    new Chart(document.getElementById("securityChart"), {
+        type:"bar",
+        data:{ labels:["Valid Signatures Accepted","Tampered Sig Rejected","Modified Msg Rejected","Wrong Sender Rejected"],
+               datasets:[{ label:"Tests Passed", data:[valid,tamped,modified,wrongSender],
+                   backgroundColor:[COLORS.green.bg,COLORS.orange.bg,COLORS.red.bg,COLORS.purple.bg],
+                   borderColor:[COLORS.green.border,COLORS.orange.border,COLORS.red.border,COLORS.purple.border], borderWidth:2 }] },
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ legend:{display:false},
+                tooltip:{ callbacks:{ label: ctx => ctx.parsed.y+"/"+maxV+" tests ("+(maxV?ctx.parsed.y/maxV*100:0).toFixed(0)+"%)" }}},
+            scales:{ y:{ beginAtZero:true, max:maxV+1, ticks:{stepSize:1}, title:{display:true,text:"Tests Passed"} } } }
+    });
+    new Chart(document.getElementById("securityRadarChart"), {
+        type:"radar",
+        data:{ labels:["Valid Sig Accepted","Tampered Sig Rejected","Modified Msg Rejected","Wrong Sender Rejected"],
+               datasets:[
+                   { label:"Detected/Passed", data:[valid,tamped,modified,wrongSender],
+                     backgroundColor:"rgba(17,153,142,0.25)", borderColor:COLORS.teal.border, pointBackgroundColor:COLORS.teal.border, borderWidth:2, pointRadius:5 },
+                   { label:"Target", data:[maxV,maxV,maxV,maxV],
+                     backgroundColor:"rgba(200,200,200,0.1)", borderColor:"rgba(150,150,150,0.6)", borderDash:[5,4], borderWidth:1.5, pointRadius:0 }
+               ]},
+        options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ legend:{position:"bottom"} },
+            scales:{ r:{ min:0, max:maxV+1, ticks:{stepSize:Math.max(1,Math.floor(maxV/5))} } } }
+    });
+}
+
+init();
+</script>
 </body>
 </html>
