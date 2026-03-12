@@ -409,7 +409,8 @@
                 { size: 128, message: 'A'.repeat(128) },
                 { size: 1024, message: 'A'.repeat(1024) },
                 { size: 10240, message: 'A'.repeat(10240) },
-                { size: 102400, message: 'A'.repeat(102400) }
+                { size: 102400, message: 'A'.repeat(102400) },
+                { size: 1048576, message: 'A'.repeat(1048576) }
             ];
 
             testResults.encryption = [];
@@ -469,8 +470,9 @@
             html += '<table><tr><th>Size</th><th>Avg Time</th><th>Std Dev</th><th>95% CI</th><th>Speed (KB/s)</th><th>Bytes/ms</th><th>Complexity</th></tr>';
 
             testResults.encryption.forEach(e => {
+                const sizeLabel = e.size >= 1048576 ? (e.size/1048576).toFixed(0)+' MB' : e.size >= 1024 ? (e.size/1024).toFixed(0)+' KB' : e.size+' B';
                 html += `<tr>
-                    <td>${e.size} bytes (${(e.size/1024).toFixed(1)} KB)</td>
+                    <td>${sizeLabel}</td>
                     <td>${e.avgTime.toFixed(2)} ms</td>
                     <td>±${e.stdDev.toFixed(2)} ms</td>
                     <td>±${e.ci95.toFixed(2)} ms</td>
@@ -497,7 +499,8 @@
                 { size: 128, message: 'A'.repeat(128) },
                 { size: 1024, message: 'A'.repeat(1024) },
                 { size: 10240, message: 'A'.repeat(10240) },
-                { size: 102400, message: 'A'.repeat(102400) }
+                { size: 102400, message: 'A'.repeat(102400) },
+                { size: 1048576, message: 'A'.repeat(1048576) }
             ];
 
             testResults.pureCrypto = [];
@@ -568,8 +571,9 @@
             html += '<table><tr><th>Size</th><th>Avg Time</th><th>Std Dev</th><th>95% CI</th><th>Speed (KB/s)</th><th>Throughput (MB/s)</th></tr>';
 
             testResults.pureCrypto.forEach(e => {
+                const sizeLabel = e.size >= 1048576 ? (e.size/1048576).toFixed(0)+' MB' : e.size >= 1024 ? (e.size/1024).toFixed(0)+' KB' : e.size+' B';
                 html += `<tr>
-                    <td>${e.size} bytes</td>
+                    <td>${sizeLabel}</td>
                     <td>${e.avgTime.toFixed(4)} ms</td>
                     <td>±${e.stdDev.toFixed(4)} ms</td>
                     <td>±${e.ci95.toFixed(4)} ms</td>
@@ -594,7 +598,9 @@
                 { size: 16, message: 'A'.repeat(16) },
                 { size: 128, message: 'A'.repeat(128) },
                 { size: 1024, message: 'A'.repeat(1024) },
-                { size: 10240, message: 'A'.repeat(10240) }
+                { size: 10240, message: 'A'.repeat(10240) },
+                { size: 102400, message: 'A'.repeat(102400) },
+                { size: 1048576, message: 'A'.repeat(1048576) }
             ];
 
             testResults.decryption = [];
@@ -677,8 +683,9 @@
             html += '<table><tr><th>Size</th><th>Encrypt (ms)</th><th>Decrypt (ms)</th><th>Total (ms)</th><th>Enc Complexity</th><th>Dec Complexity</th></tr>';
 
             testResults.decryption.forEach(e => {
+                const sizeLabel = e.size >= 1048576 ? (e.size/1048576).toFixed(0)+' MB' : e.size >= 1024 ? (e.size/1024).toFixed(0)+' KB' : e.size+' B';
                 html += `<tr>
-                    <td>${e.size} bytes</td>
+                    <td>${sizeLabel}</td>
                     <td>${e.avgEncTime.toFixed(2)} ms</td>
                     <td>${e.avgDecTime.toFixed(2)} ms</td>
                     <td>${e.totalTime.toFixed(2)} ms</td>
